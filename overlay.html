@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>LoL Rank Overlay</title>
+<style>
+  /* Riots Original-Schrift, geladen von CommunityDragon (nichts lokal noetig) */
+  @font-face {
+    font-family: "BeaufortLoL";
+    src: url("https://raw.communitydragon.org/latest/game/assets/ux/fonts/beaufortforlol-bold.otf") format("opentype");
+    font-weight: 400 700;
+  }
+  @font-face {
+    font-family: "BeaufortLoL";
+    src: url("https://raw.communitydragon.org/latest/game/assets/ux/fonts/beaufortforlol-heavy.otf") format("opentype");
+    font-weight: 800 900;
+  }
+  :root {
+    --text: #f0e6d2;
+    --muted: #c8c2b5;
+    --green: #3ddc84;
+    --red: #ff5859;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: transparent;
+    font-family: "BeaufortLoL", "Segoe UI", Georgia, serif;
+    overflow: hidden;
+  }
+  #overlay {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 4px 6px;
+    opacity: 0;
+    transition: opacity 0.6s;
+  }
+  #overlay.visible { opacity: 1; }
+
+  /* Grosses Emblem mit Divisions-Zahl links oben */
+  #emblemwrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+  #emblem {
+    width: 100%; height: 100%; object-fit: contain;
+    filter: drop-shadow(0 3px 8px rgba(0,0,0,.8));
+  }
+  #division {
+    position: absolute; top: 0; left: 2px;
+    font-size: 32px; font-weight: 800;
+    color: #fff;
+    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 2px 3px #000, 0 0 12px rgba(0,0,0,.8);
+  }
+
+  .col { display: flex; flex-direction: column; gap: 4px; }
+
+  #lp {
+    color: var(--text);
+    font-size: 26px; font-weight: 700; letter-spacing: .4px;
+    white-space: nowrap;
+    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000, 0 0 10px rgba(0,0,0,.7);
+  }
+
+  #daily {
+    font-size: 22px; font-weight: 800; white-space: nowrap;
+    letter-spacing: .3px;
+    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000, 0 0 10px rgba(0,0,0,.7);
+  }
+  #daily.pos  { color: var(--green); }
+  #daily.neg  { color: var(--red); }
+  #daily.zero { color: var(--muted); }
+  #daily .arrow { font-size: 16px; vertical-align: 2px; margin-right: 2px; }
+  #daily, #lp { transform-origin: left center; }
+
+  #champs { display: flex; gap: 8px; align-items: center; }
+  #champs .champ {
+    width: 42px; height: 42px; border-radius: 50%;
+    border: 3px solid transparent;
+    object-fit: cover;
+    background: #000;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.8));
+  }
+  #champs .champ.win  { border-color: var(--green); }
+  #champs .champ.loss { border-color: var(--red); }
+
+  #lanes { display: flex; gap: 10px; align-items: center; margin-left: 4px; }
+  #lanes .lane {
+    display: flex; align-items: center; gap: 3px;
+    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000;
+  }
+  #lanes .lane img {
+    width: 26px; height: 26px;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
+  }
+  #lanes .lane b {
+    color: var(--text); font-size: 17px; font-weight: 700;
+    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000;
+  }
+</style>
+</head>
+<body>
+  <div id="overlay">
+    <div id="emblemwrap">
+      <img id="emblem" alt="" />
+      <span id="division"></span>
+    </div>
+    <div class="col">
+      <div id="lp"></div>
+      <div id="daily"></div>
+    </div>
+    <div id="champs"></div>
+    <div id="lanes"></div>
+  </div>
+
+<script>
+// Embleme: lokale Dateien im Ordner (vom Server automatisch erkannt), sonst CommunityDragon
+function emblemUrl(tier, emblems) {
+  if (emblems && emblems[tier]) return "/" + encodeURIComponent(emblems[tier]);
+  if (!tier || tier === "UNRANKED") return "";
+  return "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-" + tier.toLowerCase() + ".png";
+}
+
+const DIV_NUM = { I: "1", II: "2", III: "3", IV: "4" };
+
+// Tagesbilanz rendern (eine Zahl, Pfeil + Farbe zeigen die Richtung)
+function renderNet(net) {
+  const daily = document.getElementById("daily");
+  if (net > 0) {
+    daily.className = "pos";
+    daily.innerHTML = '<span class="arrow">▲</span>+' + net + ' LP';
+  } else if (net < 0) {
+    daily.className = "neg";
+    daily.innerHTML = '<span class="arrow">▼</span>−' + Math.abs(net) + ' LP';
+  } else {
+    daily.className = "zero";
+    daily.innerHTML = '±0 LP';
+  }
+}
+
+// Nach einem Game: Zahl zaehlt sichtbar hoch/runter und poppt kurz auf.
+// setInterval statt requestAnimationFrame, damit es auch in gedrosselten
+// Browser-Quellen (OBS bei inaktiver Szene) zuverlaessig laeuft.
+let prevNet = null;
+let netTimer = null;
+function animateNet(from, to) {
+  const daily = document.getElementById("daily");
+  daily.animate([
+    { transform: "scale(1)" },
+    { transform: "scale(1.45)", offset: 0.25 },
+    { transform: "scale(1)" }
+  ], { duration: 1200, easing: "ease-out" });
+  const dur = 1200, start = Date.now();
+  if (netTimer) clearInterval(netTimer);
+  netTimer = setInterval(() => {
+    const t = Math.min(1, (Date.now() - start) / dur);
+    const eased = 1 - Math.pow(1 - t, 3);
+    renderNet(Math.round(from + (to - from) * eased));
+    if (t >= 1) { clearInterval(netTimer); netTimer = null; }
+  }, 50);
+}
+
+async function refresh() {
+  try {
+    const d = await (await fetch("/api/state")).json();
+    const box = document.getElementById("overlay");
+    if (!d.ok) { box.classList.remove("visible"); return; }
+    box.classList.add("visible");
+
+    // Emblem + Divisions-Zahl (Master+ hat keine Division)
+    const emblem = document.getElementById("emblem");
+    const wrap = document.getElementById("emblemwrap");
+    const src = emblemUrl(d.tier, d.emblems);
+    if (src) { emblem.src = src; wrap.style.display = ""; } else { wrap.style.display = "none"; }
+    document.getElementById("division").textContent = DIV_NUM[d.rank] || "";
+
+    // Aktuelle LP (bei Aenderung kurz aufblinken)
+    const lpEl = document.getElementById("lp");
+    const lpText = d.tier === "UNRANKED" ? "Unranked" : d.lp + " LP";
+    if (lpEl.textContent !== lpText) {
+      const hadValue = lpEl.textContent !== "";
+      lpEl.textContent = lpText;
+      if (hadValue) lpEl.animate(
+        [{ opacity: 0.2 }, { opacity: 1 }],
+        { duration: 700, easing: "ease-out" }
+      );
+    }
+
+    // Tagesbilanz: bei Aenderung animiert hochzaehlen
+    const net = (d.gains || 0) - (d.losses || 0);
+    if (prevNet === null || net === prevNet) {
+      renderNet(net);
+    } else {
+      animateNet(prevNet, net);
+    }
+    prevNet = net;
+
+    // Letzte Champs
+    const champs = document.getElementById("champs");
+    champs.innerHTML = "";
+    for (const c of d.champs || []) {
+      const img = document.createElement("img");
+      img.src = "https://ddragon.leagueoflegends.com/cdn/" + d.ddragonVersion + "/img/champion/" + c.champ + ".png";
+      img.className = "champ " + (c.win ? "win" : "loss");
+      champs.appendChild(img);
+    }
+
+    // Wie oft welche Lane heute
+    const LANE_ICON = {
+      TOP: "icon-position-top.png",
+      JUNGLE: "icon-position-jungle.png",
+      MID: "icon-position-middle.png",
+      ADC: "icon-position-bottom.png",
+      SUPPORT: "icon-position-utility.png",
+    };
+    const lanes = document.getElementById("lanes");
+    lanes.innerHTML = "";
+    for (const l of d.lanes || []) {
+      if (!LANE_ICON[l.role]) continue;
+      const span = document.createElement("span");
+      span.className = "lane";
+      const img = document.createElement("img");
+      img.src = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/" + LANE_ICON[l.role];
+      img.alt = l.role;
+      const b = document.createElement("b");
+      b.textContent = "×" + l.count;
+      span.appendChild(img); span.appendChild(b);
+      lanes.appendChild(span);
+    }
+  } catch (e) {
+    document.getElementById("overlay").classList.remove("visible");
+  }
+}
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# Persoenliche Laufzeitdaten (Account, Tagesstatistik)
+state.json
+
+# Lokale Tool-Konfiguration
+.claude/

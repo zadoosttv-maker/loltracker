@@ -1,0 +1,5 @@
+{
+  "port": 8090,
+  "pollSeconds": 30,
+  "champCount": 3
+}
