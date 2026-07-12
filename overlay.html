@@ -261,13 +261,18 @@ async function refresh() {
 refresh();
 setInterval(refresh, 2000);
 
-// Seitenwechsel alle 8 Sekunden mit weicher Ueberblendung
+// Seitenwechsel mit weicher Ueberblendung.
+// Die Elo-Seite bleibt laenger stehen, die Champ-Seite wechselt schneller zurueck.
+const RANK_MS = 14000;   // wie lange die Elo (Seite 1) zu sehen ist
+const CHAMPS_MS = 6000;  // wie lange die Champs (Seite 2) zu sehen sind
 let page = 0;
-setInterval(() => {
+function rotatePages() {
   page = 1 - page;
   document.getElementById("page1").classList.toggle("active", page === 0);
   document.getElementById("page2").classList.toggle("active", page === 1);
-}, 8000);
+  setTimeout(rotatePages, page === 0 ? RANK_MS : CHAMPS_MS);
+}
+setTimeout(rotatePages, RANK_MS);
 </script>
 </body>
 </html>
