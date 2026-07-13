@@ -158,10 +158,14 @@ const POS = { top: "TOP", jungle: "JUNGLE", middle: "MID", bottom: "ADC", utilit
 
 function detectLane(p) {
   const t = p.timeline || {};
+  // Der Client meldet die Rolle als SUPPORT/CARRY/DUO/SOLO/NONE.
+  // Support zuerst pruefen: Riots Lane-Schaetzung ist bei Supports oft
+  // BOTTOM oder NONE (Roaming), die Rolle ist das verlaesslichere Signal.
+  if (t.role === "SUPPORT" || t.role === "DUO_SUPPORT") return "SUPPORT";
   if (t.lane === "TOP") return "TOP";
   if (t.lane === "JUNGLE") return "JUNGLE";
   if (t.lane === "MIDDLE" || t.lane === "MID") return "MID";
-  if (t.lane === "BOTTOM" || t.lane === "BOT") return t.role === "DUO_SUPPORT" ? "SUPPORT" : "ADC";
+  if (t.lane === "BOTTOM" || t.lane === "BOT") return "ADC";
   return null;
 }
 
