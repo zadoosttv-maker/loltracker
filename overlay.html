@@ -92,16 +92,22 @@
 
   #champs { display: flex; gap: 14px; }
   .champbox { position: relative; }
-  .champbox .champ {
+  /* Runder Rahmen; das Bild wird hineingezoomt, damit Riots
+     eingebauter schwarzer Bildrand weggeschnitten wird */
+  .champbox .champframe {
     width: 74px; height: 74px; border-radius: 50%;
     border: 3px solid transparent;
-    object-fit: cover;
+    overflow: hidden;
     background: #000;
     filter: drop-shadow(0 3px 6px rgba(0,0,0,.8));
+  }
+  .champbox .champframe img {
+    width: 116%; height: 116%;
+    margin: -8% 0 0 -8%;
     display: block;
   }
-  .champbox .champ.win  { border-color: var(--green); }
-  .champbox .champ.loss { border-color: var(--red); filter: saturate(.55) drop-shadow(0 3px 6px rgba(0,0,0,.8)); }
+  .champbox .champframe.win  { border-color: var(--green); }
+  .champbox .champframe.loss { border-color: var(--red); filter: saturate(.55) drop-shadow(0 3px 6px rgba(0,0,0,.8)); }
   .champbox .role {
     position: absolute; right: -5px; bottom: -5px;
     width: 30px; height: 30px; padding: 5px;
@@ -259,10 +265,12 @@ async function refresh() {
     for (const c of d.champs || []) {
       const boxEl = document.createElement("div");
       boxEl.className = "champbox";
+      const frame = document.createElement("div");
+      frame.className = "champframe " + (c.win ? "win" : "loss");
       const img = document.createElement("img");
       img.src = "https://ddragon.leagueoflegends.com/cdn/" + d.ddragonVersion + "/img/champion/" + c.champ + ".png";
-      img.className = "champ " + (c.win ? "win" : "loss");
-      boxEl.appendChild(img);
+      frame.appendChild(img);
+      boxEl.appendChild(frame);
       if (c.lane && LANE_ICON[c.lane]) {
         const role = document.createElement("img");
         role.src = laneIconUrl(c.lane);
