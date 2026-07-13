@@ -30,7 +30,8 @@
 
   /* Zwei Seiten, die weich ueberblenden; beide liegen in derselben Grid-Zelle */
   #overlay {
-    display: grid;
+    display: inline-grid;
+    justify-items: start;
     padding: 4px 6px;
     opacity: 0;
     transition: opacity 0.6s;
@@ -79,31 +80,45 @@
   #daily .arrow { font-size: 16px; vertical-align: 2px; margin-right: 2px; }
   #daily, #lp { transform-origin: left center; }
 
-  /* ---- Seite 2: Champs mit Rolle darunter + Lane-Zaehler ---- */
-  #champs { display: flex; gap: 16px; align-items: flex-start; }
-  .champbox { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  /* ---- Seite 2: Champs mit Rollen-Badge + Lane-Zaehler ---- */
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .grouplabel {
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    color: #c8aa6e; /* Riot-Gold */
+    text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,.8);
+    white-space: nowrap;
+  }
+
+  #champs { display: flex; gap: 14px; }
+  .champbox { position: relative; }
   .champbox .champ {
-    width: 56px; height: 56px; border-radius: 50%;
+    width: 74px; height: 74px; border-radius: 50%;
     border: 3px solid transparent;
     object-fit: cover;
     background: #000;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,.8));
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,.8));
+    display: block;
   }
   .champbox .champ.win  { border-color: var(--green); }
-  .champbox .champ.loss { border-color: var(--red); }
+  .champbox .champ.loss { border-color: var(--red); filter: saturate(.55) drop-shadow(0 3px 6px rgba(0,0,0,.8)); }
   .champbox .role {
-    width: 24px; height: 24px;
-    filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
+    position: absolute; right: -5px; bottom: -5px;
+    width: 30px; height: 30px; padding: 5px;
+    background: rgba(10, 14, 22, .92);
+    border: 1px solid rgba(200, 170, 110, .55);
+    border-radius: 50%;
   }
 
-  #lanes { display: flex; gap: 12px; align-items: center; margin-left: 10px; }
-  #lanes .lane { display: flex; align-items: center; gap: 3px; }
+  #lanesgroup { margin-left: 14px; }
+  #lanes { display: flex; gap: 14px; align-items: center; height: 74px; }
+  #lanes .lane { display: flex; align-items: center; gap: 4px; }
   #lanes .lane img {
-    width: 26px; height: 26px;
+    width: 28px; height: 28px;
     filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
   }
   #lanes .lane b {
-    color: var(--text); font-size: 17px; font-weight: 700;
+    color: var(--text); font-size: 19px; font-weight: 700;
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000;
   }
 </style>
@@ -121,8 +136,14 @@
       </div>
     </div>
     <div id="page2" class="page">
-      <div id="champs"></div>
-      <div id="lanes"></div>
+      <div class="group">
+        <div class="grouplabel">Letzte Games</div>
+        <div id="champs"></div>
+      </div>
+      <div class="group" id="lanesgroup">
+        <div class="grouplabel">Lanes heute</div>
+        <div id="lanes"></div>
+      </div>
     </div>
   </div>
 
@@ -239,8 +260,10 @@ async function refresh() {
       champs.appendChild(boxEl);
     }
 
-    // Wie oft welche Lane heute
+    // Wie oft welche Lane heute (Gruppe ausblenden, wenn noch nichts gespielt)
     const lanes = document.getElementById("lanes");
+    document.getElementById("lanesgroup").style.display =
+      (d.lanes || []).length ? "" : "none";
     lanes.innerHTML = "";
     for (const l of d.lanes || []) {
       if (!LANE_ICON[l.role]) continue;
