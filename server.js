@@ -289,7 +289,11 @@ async function poll() {
       const p = g.participants && g.participants[0];
       if (!p) continue;
       if (champs.length < (config.champCount || 3)) {
-        champs.push({ champ: champById[String(p.championId)] || "Champ" + p.championId, win: !!(p.stats && p.stats.win) });
+        champs.push({
+          champ: champById[String(p.championId)] || "Champ" + p.championId,
+          win: !!(p.stats && p.stats.win),
+          lane: recordedLaneFor(state, g) || detectLane(p),
+        });
       }
       const ts = g.gameCreation || (g.gameCreationDate ? Date.parse(g.gameCreationDate) : null);
       if (isToday(ts)) {

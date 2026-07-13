@@ -27,17 +27,27 @@
     font-family: "BeaufortLoL", "Segoe UI", Georgia, serif;
     overflow: hidden;
   }
+
+  /* Zwei Seiten, die weich ueberblenden; beide liegen in derselben Grid-Zelle */
   #overlay {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
+    display: inline-grid;
+    justify-items: start;
     padding: 4px 6px;
     opacity: 0;
     transition: opacity 0.6s;
   }
   #overlay.visible { opacity: 1; }
+  .page {
+    grid-area: 1 / 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    opacity: 0;
+    transition: opacity 0.7s;
+  }
+  .page.active { opacity: 1; }
 
-  /* Grosses Emblem mit Divisions-Zahl links oben */
+  /* ---- Seite 1: Elo ---- */
   #emblemwrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
   #emblem {
     width: 100%; height: 100%; object-fit: contain;
@@ -70,44 +80,71 @@
   #daily .arrow { font-size: 16px; vertical-align: 2px; margin-right: 2px; }
   #daily, #lp { transform-origin: left center; }
 
-  #champs { display: flex; gap: 8px; align-items: center; }
-  #champs .champ {
-    width: 42px; height: 42px; border-radius: 50%;
+  /* ---- Seite 2: Champs mit Rollen-Badge + Lane-Zaehler ---- */
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .grouplabel {
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    color: #c8aa6e; /* Riot-Gold */
+    text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,.8);
+    white-space: nowrap;
+  }
+
+  #champs { display: flex; gap: 14px; }
+  .champbox { position: relative; }
+  .champbox .champ {
+    width: 74px; height: 74px; border-radius: 50%;
     border: 3px solid transparent;
     object-fit: cover;
     background: #000;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,.8));
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,.8));
+    display: block;
   }
-  #champs .champ.win  { border-color: var(--green); }
-  #champs .champ.loss { border-color: var(--red); }
+  .champbox .champ.win  { border-color: var(--green); }
+  .champbox .champ.loss { border-color: var(--red); filter: saturate(.55) drop-shadow(0 3px 6px rgba(0,0,0,.8)); }
+  .champbox .role {
+    position: absolute; right: -5px; bottom: -5px;
+    width: 30px; height: 30px; padding: 5px;
+    background: rgba(10, 14, 22, .92);
+    border: 1px solid rgba(200, 170, 110, .55);
+    border-radius: 50%;
+  }
 
-  #lanes { display: flex; gap: 10px; align-items: center; margin-left: 4px; }
-  #lanes .lane {
-    display: flex; align-items: center; gap: 3px;
-    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000;
-  }
+  #lanesgroup { margin-left: 14px; }
+  #lanes { display: flex; gap: 14px; align-items: center; height: 74px; }
+  #lanes .lane { display: flex; align-items: center; gap: 4px; }
   #lanes .lane img {
-    width: 26px; height: 26px;
+    width: 28px; height: 28px;
     filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
   }
   #lanes .lane b {
-    color: var(--text); font-size: 17px; font-weight: 700;
+    color: var(--text); font-size: 19px; font-weight: 700;
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000;
   }
 </style>
 </head>
 <body>
   <div id="overlay">
-    <div id="emblemwrap">
-      <img id="emblem" alt="" />
-      <span id="division"></span>
+    <div id="page1" class="page active">
+      <div id="emblemwrap">
+        <img id="emblem" alt="" />
+        <span id="division"></span>
+      </div>
+      <div class="col">
+        <div id="lp"></div>
+        <div id="daily"></div>
+      </div>
     </div>
-    <div class="col">
-      <div id="lp"></div>
-      <div id="daily"></div>
+    <div id="page2" class="page">
+      <div class="group">
+        <div class="grouplabel">Letzte Games</div>
+        <div id="champs"></div>
+      </div>
+      <div class="group" id="lanesgroup">
+        <div class="grouplabel">Lanes heute</div>
+        <div id="lanes"></div>
+      </div>
     </div>
-    <div id="champs"></div>
-    <div id="lanes"></div>
   </div>
 
 <script>
@@ -119,6 +156,17 @@ function emblemUrl(tier, emblems) {
 }
 
 const DIV_NUM = { I: "1", II: "2", III: "3", IV: "4" };
+
+const LANE_ICON = {
+  TOP: "icon-position-top.png",
+  JUNGLE: "icon-position-jungle.png",
+  MID: "icon-position-middle.png",
+  ADC: "icon-position-bottom.png",
+  SUPPORT: "icon-position-utility.png",
+};
+function laneIconUrl(lane) {
+  return "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/" + LANE_ICON[lane];
+}
 
 // Tagesbilanz rendern (eine Zahl, Pfeil + Farbe zeigen die Richtung)
 function renderNet(net) {
@@ -164,7 +212,7 @@ async function refresh() {
     if (!d.ok) { box.classList.remove("visible"); return; }
     box.classList.add("visible");
 
-    // Emblem + Divisions-Zahl (Master+ hat keine Division)
+    // ---- Seite 1: Emblem + Divisions-Zahl (Master+ hat keine Division) ----
     const emblem = document.getElementById("emblem");
     const wrap = document.getElementById("emblemwrap");
     const src = emblemUrl(d.tier, d.emblems);
@@ -192,32 +240,37 @@ async function refresh() {
     }
     prevNet = net;
 
-    // Letzte Champs
+    // ---- Seite 2: Letzte Champs, darunter die Rolle aus der Champ-Auswahl ----
     const champs = document.getElementById("champs");
     champs.innerHTML = "";
     for (const c of d.champs || []) {
+      const boxEl = document.createElement("div");
+      boxEl.className = "champbox";
       const img = document.createElement("img");
       img.src = "https://ddragon.leagueoflegends.com/cdn/" + d.ddragonVersion + "/img/champion/" + c.champ + ".png";
       img.className = "champ " + (c.win ? "win" : "loss");
-      champs.appendChild(img);
+      boxEl.appendChild(img);
+      if (c.lane && LANE_ICON[c.lane]) {
+        const role = document.createElement("img");
+        role.src = laneIconUrl(c.lane);
+        role.className = "role";
+        role.alt = c.lane;
+        boxEl.appendChild(role);
+      }
+      champs.appendChild(boxEl);
     }
 
-    // Wie oft welche Lane heute
-    const LANE_ICON = {
-      TOP: "icon-position-top.png",
-      JUNGLE: "icon-position-jungle.png",
-      MID: "icon-position-middle.png",
-      ADC: "icon-position-bottom.png",
-      SUPPORT: "icon-position-utility.png",
-    };
+    // Wie oft welche Lane heute (Gruppe ausblenden, wenn noch nichts gespielt)
     const lanes = document.getElementById("lanes");
+    document.getElementById("lanesgroup").style.display =
+      (d.lanes || []).length ? "" : "none";
     lanes.innerHTML = "";
     for (const l of d.lanes || []) {
       if (!LANE_ICON[l.role]) continue;
       const span = document.createElement("span");
       span.className = "lane";
       const img = document.createElement("img");
-      img.src = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/" + LANE_ICON[l.role];
+      img.src = laneIconUrl(l.role);
       img.alt = l.role;
       const b = document.createElement("b");
       b.textContent = "×" + l.count;
@@ -230,6 +283,19 @@ async function refresh() {
 }
 refresh();
 setInterval(refresh, 2000);
+
+// Seitenwechsel mit weicher Ueberblendung.
+// Die Elo-Seite bleibt laenger stehen, die Champ-Seite wechselt schneller zurueck.
+const RANK_MS = 14000;   // wie lange die Elo (Seite 1) zu sehen ist
+const CHAMPS_MS = 6000;  // wie lange die Champs (Seite 2) zu sehen sind
+let page = 0;
+function rotatePages() {
+  page = 1 - page;
+  document.getElementById("page1").classList.toggle("active", page === 0);
+  document.getElementById("page2").classList.toggle("active", page === 1);
+  setTimeout(rotatePages, page === 0 ? RANK_MS : CHAMPS_MS);
+}
+setTimeout(rotatePages, RANK_MS);
 </script>
 </body>
 </html>
