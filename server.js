@@ -171,7 +171,11 @@ function recordLane(gameId, lane) {
   const state = loadState();
   if (!state.laneRecords) state.laneRecords = [];
   const lastRec = state.laneRecords[state.laneRecords.length - 1];
-  if (lastRec && lastRec.gameId === gameId && lastRec.lane === lane) return; // unveraendert
+  // Unveraendert innerhalb derselben Champ-Auswahl -> nichts schreiben.
+  // Der Zeit-Check stellt sicher, dass eine spaetere Auswahl mit gleicher
+  // Rolle (und ggf. fehlender gameId) trotzdem einen eigenen Eintrag bekommt.
+  if (lastRec && lastRec.gameId === gameId && lastRec.lane === lane &&
+      Date.now() - lastRec.ts < 3 * 60 * 1000) return;
   state.laneRecords.push({ gameId, lane, ts: Date.now() });
   if (state.laneRecords.length > 60) state.laneRecords = state.laneRecords.slice(-60);
   saveState(state);
@@ -216,13 +220,13 @@ async function watchChampSelect() {
 
   if (phase !== "ChampSelect") return;
   try {
-    const [session, flow] = await Promise.all([
-      lcuGet("/lol-champ-select/v1/session"),
-      lcuGet("/lol-gameflow/v1/session"),
-    ]);
+    const session = await lcuGet("/lol-champ-select/v1/session");
     const me = (session.myTeam || []).find(p => p.cellId === session.localPlayerCellId);
     const lane = me && POS[me.assignedPosition];
-    const gameId = (flow.gameData && flow.gameData.gameId) || null;
+    // Wichtig: die gameId aus der Champ-Select-Session selbst nehmen.
+    // Die aus /lol-gameflow/v1/session haengt manchmal noch am vorherigen
+    // Spiel und ordnet die neue Rolle dann dem falschen Game zu.
+    const gameId = session.gameId || null;
     if (lane) recordLane(gameId, lane);
   } catch { /* Champ-Auswahl gerade beendet o.ae. */ }
 }
@@ -410,7 +414,7 @@ server.listen(config.port, "127.0.0.1", () => {
   loadDDragon().then(poll);
   checkUpdate();
   setInterval(poll, (config.pollSeconds || 30) * 1000);
-  setInterval(watchChampSelect, 5000);
+  setInterval(watchChampSelect, 2000);
   setInterval(loadDDragon, 6 * 3600 * 1000);
   setInterval(checkUpdate, 6 * 3600 * 1000);
 });
