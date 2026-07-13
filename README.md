@@ -36,6 +36,15 @@ Lege einfach Bilddateien in den Projektordner, deren Dateiname den englischen Ti
 | `pollSeconds` | `30` | Aktualisierungsintervall in Sekunden |
 | `champCount` | `3` | Anzahl der angezeigten letzten Champs |
 
+## Updates
+
+Der Tracker prüft automatisch, ob es auf GitHub eine neuere Version gibt. Falls ja, erscheint unten links im Overlay dezent **„⬆ Update verfügbar"**. Zum Aktualisieren gibt es zwei Wege:
+
+- **`update.bat` doppelklicken**, oder
+- **http://localhost:8090/update** im Browser öffnen und auf „Jetzt updaten" klicken
+
+Beides lädt die neueste Version herunter, tauscht die Dateien aus und startet den Tracker neu. Deine Einstellungen (`config.json`) und Statistiken (`state.json`) bleiben dabei erhalten.
+
 ## Deinstallieren
 
 `uninstall.bat` doppelklicken — beendet den Tracker und entfernt den Autostart. Danach kann der Ordner einfach gelöscht werden.

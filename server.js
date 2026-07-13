@@ -5,7 +5,7 @@ const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
-const { execFile } = require("child_process");
+const { execFile, spawn } = require("child_process");
 
 const ROOT = __dirname;
 const STATE_FILE = path.join(ROOT, "state.json");
@@ -13,6 +13,36 @@ const STATE_FILE = path.join(ROOT, "state.json");
 let config = { port: 8090, pollSeconds: 30, champCount: 3 };
 try { config = { ...config, ...JSON.parse(fs.readFileSync(path.join(ROOT, "config.json"), "utf8")) }; } catch {}
 if (process.env.PORT) config.port = Number(process.env.PORT);
+
+// ---- Update-Check gegen GitHub ----
+let VERSION = "0.0.0";
+try { VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, "version.json"), "utf8")).version; } catch {}
+const VERSION_URL = "https://raw.githubusercontent.com/zadoosttv-maker/loltracker/main/version.json";
+let latestVersion = VERSION;
+let updateAvailable = false;
+
+function isNewer(remote, local) {
+  const r = String(remote).split(".").map(Number);
+  const l = String(local).split(".").map(Number);
+  for (let i = 0; i < Math.max(r.length, l.length); i++) {
+    const a = r[i] || 0, b = l[i] || 0;
+    if (a > b) return true;
+    if (a < b) return false;
+  }
+  return false;
+}
+
+async function checkUpdate() {
+  try {
+    const res = await fetch(VERSION_URL, { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && data.version) {
+      latestVersion = data.version;
+      updateAvailable = isNewer(latestVersion, VERSION);
+    }
+  } catch { /* offline o.ae. - beim naechsten Check erneut versuchen */ }
+}
 
 const TIERS = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"];
 const DIVS = { IV: 0, III: 1, II: 2, I: 3 };
@@ -225,6 +255,9 @@ function buildOverlay(acc, connected) {
     lanes: fresh ? acc.lanes || [] : [],
     emblems,
     ddragonVersion,
+    version: VERSION,
+    latestVersion,
+    updateAvailable,
   };
 }
 
@@ -340,7 +373,21 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify(overlayData));
     return;
   }
-  let file = urlPath === "/" ? "/overlay.html" : urlPath;
+  // Startet update.bat, das den Tracker aktualisiert und neu startet
+  if (urlPath === "/api/do-update" && req.method === "POST") {
+    const ip = req.socket.remoteAddress;
+    if (!["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(ip)) {
+      res.writeHead(403); res.end(); return;
+    }
+    spawn("cmd.exe", ["/c", "update.bat", "silent"],
+      { cwd: ROOT, detached: true, stdio: "ignore", windowsHide: true }).unref();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end('{"ok":true}');
+    return;
+  }
+  let file = urlPath === "/" ? "/overlay.html"
+           : urlPath === "/update" ? "/update.html"
+           : urlPath;
   const full = path.join(ROOT, path.normalize(file).replace(/^([\\/.])+/, ""));
   if (!full.startsWith(ROOT) || !fs.existsSync(full) || !fs.statSync(full).isFile()) {
     res.writeHead(404); res.end("Not found"); return;
@@ -358,10 +405,12 @@ server.on("error", (e) => {
   process.exit(1);
 });
 
-server.listen(config.port, () => {
-  console.log("LoL Rank Tracker laeuft: http://localhost:" + config.port + "/");
+server.listen(config.port, "127.0.0.1", () => {
+  console.log("LoL Rank Tracker " + VERSION + " laeuft: http://localhost:" + config.port + "/");
   loadDDragon().then(poll);
+  checkUpdate();
   setInterval(poll, (config.pollSeconds || 30) * 1000);
   setInterval(watchChampSelect, 5000);
   setInterval(loadDDragon, 6 * 3600 * 1000);
+  setInterval(checkUpdate, 6 * 3600 * 1000);
 });

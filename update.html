@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>LoL Rank Tracker – Update</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0e16;
+    color: #f0e6d2;
+    font-family: "Segoe UI", Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    text-align: center;
+    padding: 40px 48px;
+    border: 1px solid rgba(200, 170, 110, .4);
+    border-radius: 14px;
+    background: #111624;
+    max-width: 460px;
+  }
+  h1 { font-size: 22px; margin-bottom: 12px; color: #c8aa6e; }
+  p { color: #a09b8c; font-size: 15px; margin-bottom: 8px; line-height: 1.5; }
+  .versions { font-size: 17px; color: #f0e6d2; margin: 16px 0 24px; }
+  .versions b { color: #3ddc84; }
+  button {
+    font-size: 17px; font-weight: 600;
+    padding: 12px 32px;
+    background: #c8aa6e; color: #0a0e16;
+    border: none; border-radius: 8px;
+    cursor: pointer;
+  }
+  button:hover { background: #dfc188; }
+  button:disabled { background: #555; color: #999; cursor: default; }
+  #status { margin-top: 18px; font-size: 15px; min-height: 22px; }
+  .ok { color: #3ddc84; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>LoL Rank Tracker</h1>
+    <p>Aktualisiert den Tracker auf die neueste Version von GitHub.<br>
+       Deine Einstellungen und Statistiken bleiben erhalten.</p>
+    <div class="versions" id="versions">Prüfe Version...</div>
+    <button id="btn" onclick="doUpdate()" disabled>Jetzt updaten</button>
+    <div id="status"></div>
+  </div>
+
+<script>
+async function load() {
+  try {
+    const d = await (await fetch("/api/state")).json();
+    const v = document.getElementById("versions");
+    const btn = document.getElementById("btn");
+    if (d.updateAvailable) {
+      v.innerHTML = "Installiert: " + d.version + " &nbsp;→&nbsp; Neu: <b>" + d.latestVersion + "</b>";
+      btn.disabled = false;
+    } else {
+      v.textContent = "Version " + d.version + " – du bist auf dem neuesten Stand!";
+      btn.disabled = false;
+      btn.textContent = "Trotzdem neu installieren";
+    }
+  } catch {
+    document.getElementById("versions").textContent = "Tracker nicht erreichbar – läuft server.js?";
+  }
+}
+
+async function doUpdate() {
+  const btn = document.getElementById("btn");
+  const status = document.getElementById("status");
+  btn.disabled = true;
+  status.textContent = "Update läuft... Der Tracker startet sich gleich neu.";
+  try {
+    await fetch("/api/do-update", { method: "POST" });
+  } catch {}
+  // Warten, bis der Tracker wieder da ist
+  let tries = 0;
+  const timer = setInterval(async () => {
+    tries++;
+    try {
+      const d = await (await fetch("/api/state")).json();
+      clearInterval(timer);
+      status.innerHTML = '<span class="ok">✓ Update abgeschlossen! Version ' + d.version + ' läuft.</span>';
+    } catch {
+      if (tries > 30) {
+        clearInterval(timer);
+        status.textContent = "Dauert länger als erwartet – notfalls update.bat manuell ausführen.";
+      }
+    }
+  }, 2000);
+}
+load();
+</script>
+</body>
+</html>
