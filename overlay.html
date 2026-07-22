@@ -18,8 +18,10 @@
   :root {
     --text: #f0e6d2;
     --muted: #c8c2b5;
+    --gold: #c8aa6e;
     --green: #3ddc84;
     --red: #ff5859;
+    --shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000, 0 0 10px rgba(0,0,0,.7);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -28,17 +30,19 @@
     overflow: hidden;
   }
 
-  /* Zwei Seiten, die weich ueberblenden; beide liegen in derselben Grid-Zelle */
+  /* Drei Seiten, die weich ueberblenden; alle liegen in derselben Grid-Zelle */
   #overlay {
     display: inline-grid;
     justify-items: start;
     padding: 4px 6px;
     opacity: 0;
     transition: opacity 0.6s;
+    min-width: 560px;
   }
   #overlay.visible { opacity: 1; }
   .page {
     grid-area: 1 / 1;
+    width: 100%;
     display: inline-flex;
     align-items: center;
     gap: 14px;
@@ -48,14 +52,14 @@
   .page.active { opacity: 1; }
 
   /* ---- Seite 1: Elo ---- */
-  #emblemwrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+  #emblemwrap { position: relative; width: 124px; height: 124px; flex-shrink: 0; }
   #emblem {
     width: 100%; height: 100%; object-fit: contain;
     filter: drop-shadow(0 3px 8px rgba(0,0,0,.8));
   }
   #division {
     position: absolute; top: 0; left: 2px;
-    font-size: 32px; font-weight: 800;
+    font-size: 36px; font-weight: 800;
     color: #fff;
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 2px 3px #000, 0 0 12px rgba(0,0,0,.8);
   }
@@ -64,28 +68,28 @@
 
   #lp {
     color: var(--text);
-    font-size: 26px; font-weight: 700; letter-spacing: .4px;
+    font-size: 30px; font-weight: 700; letter-spacing: .4px;
     white-space: nowrap;
-    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000, 0 0 10px rgba(0,0,0,.7);
+    text-shadow: var(--shadow);
   }
 
   #daily {
-    font-size: 22px; font-weight: 800; white-space: nowrap;
+    font-size: 26px; font-weight: 800; white-space: nowrap;
     letter-spacing: .3px;
-    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000, 0 0 10px rgba(0,0,0,.7);
+    text-shadow: var(--shadow);
   }
   #daily.pos  { color: var(--green); }
   #daily.neg  { color: var(--red); }
   #daily.zero { color: var(--muted); }
-  #daily .arrow { font-size: 16px; vertical-align: 2px; margin-right: 2px; }
+  #daily .arrow { font-size: 18px; vertical-align: 2px; margin-right: 2px; }
   #daily, #lp { transform-origin: left center; }
 
   /* ---- Seite 2: Champs mit Rollen-Badge + Lane-Zaehler ---- */
   .group { display: flex; flex-direction: column; gap: 8px; }
   .grouplabel {
-    font-size: 13px; font-weight: 700;
+    font-size: 15px; font-weight: 700;
     letter-spacing: 2.5px; text-transform: uppercase;
-    color: #c8aa6e; /* Riot-Gold */
+    color: var(--gold);
     text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,.8);
     white-space: nowrap;
   }
@@ -95,7 +99,7 @@
   /* Runder Rahmen; das Bild wird hineingezoomt, damit Riots
      eingebauter schwarzer Bildrand weggeschnitten wird */
   .champbox .champframe {
-    width: 74px; height: 74px; border-radius: 50%;
+    width: 82px; height: 82px; border-radius: 50%;
     border: 3px solid transparent;
     overflow: hidden;
     background: #000;
@@ -110,43 +114,70 @@
   .champbox .champframe.loss { border-color: var(--red); filter: saturate(.55) drop-shadow(0 3px 6px rgba(0,0,0,.8)); }
   .champbox .role {
     position: absolute; right: -5px; bottom: -5px;
-    width: 30px; height: 30px; padding: 5px;
+    width: 32px; height: 32px; padding: 5px;
     background: rgba(10, 14, 22, .92);
     border: 1px solid rgba(200, 170, 110, .55);
     border-radius: 50%;
   }
 
   #lanesgroup { margin-left: 14px; }
-  #lanes { display: flex; gap: 14px; align-items: center; height: 74px; }
+  #lanes { display: flex; gap: 14px; align-items: center; height: 82px; }
   #lanes .lane { display: flex; align-items: center; gap: 4px; }
   #lanes .lane img {
-    width: 28px; height: 28px;
+    width: 30px; height: 30px;
     filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
   }
   #lanes .lane b {
-    color: var(--text); font-size: 19px; font-weight: 700;
-    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000;
+    color: var(--text); font-size: 20px; font-weight: 700;
+    text-shadow: var(--shadow);
   }
 
-  /* ---- Seite 3: Spielername ---- */
-  #page3 { min-height: 110px; }
+  /* ---- Seite 3: Spielername (zentriert) ---- */
+  #page3 { min-height: 124px; justify-content: center; }
   #playername {
-    font-size: 38px; font-weight: 800; letter-spacing: 1px;
+    font-size: 46px; font-weight: 800; letter-spacing: 1px;
     color: var(--text);
     white-space: nowrap;
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 2px 3px #000, 0 0 12px rgba(0,0,0,.7);
   }
   #playername .tag {
-    color: #c8aa6e;
-    font-size: 26px; font-weight: 700;
+    color: var(--gold);
+    font-size: 30px; font-weight: 700;
     margin-left: 8px;
+  }
+
+  /* Mini-Rank oben rechts (auf allen Seiten ausser der Elo-Seite) */
+  #minirank {
+    position: fixed; top: 6px; right: 10px;
+    display: none; align-items: center; gap: 7px;
+    opacity: 0;
+    transition: opacity 0.7s;
+  }
+  #minirank.show { display: flex; opacity: 1; }
+  #minirank img {
+    width: 44px; height: 44px; object-fit: contain;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,.8));
+  }
+  #minirank span {
+    font-size: 19px; font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    text-shadow: var(--shadow);
+  }
+
+  /* Kleine Vorschau unten rechts, welche Seite als naechstes kommt */
+  #nextpage {
+    position: fixed; bottom: 4px; right: 10px;
+    font-size: 14px; font-weight: 600; letter-spacing: 1px;
+    color: var(--muted); opacity: .85;
+    text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,.8);
   }
 
   /* Hinweis, wenn auf GitHub eine neuere Version liegt */
   #update {
     position: fixed; left: 8px; bottom: 2px;
     font-size: 13px; font-weight: 700; letter-spacing: .5px;
-    color: #c8aa6e;
+    color: var(--gold);
     text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,.8);
     display: none;
   }
@@ -178,9 +209,15 @@
       <div id="playername"></div>
     </div>
   </div>
+  <div id="minirank"><img alt="" /><span></span></div>
+  <div id="nextpage"></div>
   <div id="update">⬆ Update verfügbar – localhost:8090/update</div>
 
 <script>
+// Optionale Groessenanpassung per URL, z.B. /?scale=1.2
+const scaleParam = parseFloat(new URLSearchParams(location.search).get("scale"));
+if (scaleParam && scaleParam > 0 && scaleParam !== 1) document.body.style.zoom = scaleParam;
+
 // Embleme: lokale Dateien im Ordner (vom Server automatisch erkannt), sonst CommunityDragon
 function emblemUrl(tier, emblems) {
   if (emblems && emblems[tier]) return "/" + encodeURIComponent(emblems[tier]);
@@ -267,6 +304,13 @@ async function refresh() {
       );
     }
 
+    // Mini-Rank oben rechts (fuer die Seiten ohne grosses Emblem)
+    const miniImg = document.querySelector("#minirank img");
+    const miniText = document.querySelector("#minirank span");
+    if (src) { miniImg.src = src; miniImg.style.display = ""; } else { miniImg.style.display = "none"; }
+    miniText.textContent = d.tier === "UNRANKED" ? "Unranked"
+      : (DIV_NUM[d.rank] ? DIV_NUM[d.rank] + " · " : "") + d.lp + " LP";
+
     // Tagesbilanz: bei Aenderung animiert hochzaehlen
     const net = (d.gains || 0) - (d.losses || 0);
     if (prevNet === null || net === prevNet) {
@@ -276,7 +320,7 @@ async function refresh() {
     }
     prevNet = net;
 
-    // ---- Seite 2: Letzte Champs, darunter die Rolle aus der Champ-Auswahl ----
+    // ---- Seite 2: Letzte Champs, Rolle als Badge ----
     const champs = document.getElementById("champs");
     champs.innerHTML = "";
     for (const c of d.champs || []) {
@@ -342,15 +386,27 @@ setInterval(refresh, 2000);
 
 // Seitenwechsel mit weicher Ueberblendung.
 // Die Elo-Seite bleibt am laengsten stehen, die anderen wechseln schneller.
-const PAGE_MS = [14000, 6000, 5000]; // Elo, Champs, Name
+const PAGE_MS = [14000, 6000, 5000];        // Elo, Champs, Name
 const PAGE_IDS = ["page1", "page2", "page3"];
+const PAGE_LABEL = ["Elo", "Champs", "Name"];
 let page = 0;
-function rotatePages() {
-  page = (page + 1) % PAGE_IDS.length;
+
+function applyPage() {
   PAGE_IDS.forEach((id, i) =>
     document.getElementById(id).classList.toggle("active", i === page));
+  // Mini-Rank nur zeigen, wenn das grosse Emblem nicht zu sehen ist
+  document.getElementById("minirank").classList.toggle("show", page !== 0);
+  // Kleine Vorschau: welche Seite kommt als naechstes
+  document.getElementById("nextpage").textContent =
+    "→ " + PAGE_LABEL[(page + 1) % PAGE_IDS.length];
+}
+
+function rotatePages() {
+  page = (page + 1) % PAGE_IDS.length;
+  applyPage();
   setTimeout(rotatePages, PAGE_MS[page]);
 }
+applyPage();
 setTimeout(rotatePages, PAGE_MS[0]);
 </script>
 </body>
