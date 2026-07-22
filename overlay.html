@@ -165,14 +165,6 @@
     text-shadow: var(--shadow);
   }
 
-  /* Kleine Vorschau unten rechts, welche Seite als naechstes kommt */
-  #nextpage {
-    position: fixed; bottom: 4px; right: 10px;
-    font-size: 14px; font-weight: 600; letter-spacing: 1px;
-    color: var(--muted); opacity: .85;
-    text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,.8);
-  }
-
   /* Hinweis, wenn auf GitHub eine neuere Version liegt */
   #update {
     position: fixed; left: 8px; bottom: 2px;
@@ -210,7 +202,6 @@
     </div>
   </div>
   <div id="minirank"><img alt="" /><span></span></div>
-  <div id="nextpage"></div>
   <div id="update">⬆ Update verfügbar – localhost:8090/update</div>
 
 <script>
@@ -388,7 +379,6 @@ setInterval(refresh, 2000);
 // Die Elo-Seite bleibt am laengsten stehen, die anderen wechseln schneller.
 const PAGE_MS = [14000, 6000, 5000];        // Elo, Champs, Name
 const PAGE_IDS = ["page1", "page2", "page3"];
-const PAGE_LABEL = ["Elo", "Champs", "Name"];
 let page = 0;
 
 function applyPage() {
@@ -396,9 +386,6 @@ function applyPage() {
     document.getElementById(id).classList.toggle("active", i === page));
   // Mini-Rank nur zeigen, wenn das grosse Emblem nicht zu sehen ist
   document.getElementById("minirank").classList.toggle("show", page !== 0);
-  // Kleine Vorschau: welche Seite kommt als naechstes
-  document.getElementById("nextpage").textContent =
-    "→ " + PAGE_LABEL[(page + 1) % PAGE_IDS.length];
 }
 
 function rotatePages() {
