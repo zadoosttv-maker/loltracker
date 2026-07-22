@@ -128,6 +128,20 @@
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000;
   }
 
+  /* ---- Seite 3: Spielername ---- */
+  #page3 { min-height: 110px; }
+  #playername {
+    font-size: 38px; font-weight: 800; letter-spacing: 1px;
+    color: var(--text);
+    white-space: nowrap;
+    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 2px 3px #000, 0 0 12px rgba(0,0,0,.7);
+  }
+  #playername .tag {
+    color: #c8aa6e;
+    font-size: 26px; font-weight: 700;
+    margin-left: 8px;
+  }
+
   /* Hinweis, wenn auf GitHub eine neuere Version liegt */
   #update {
     position: fixed; left: 8px; bottom: 2px;
@@ -159,6 +173,9 @@
         <div class="grouplabel">Lanes heute</div>
         <div id="lanes"></div>
       </div>
+    </div>
+    <div id="page3" class="page">
+      <div id="playername"></div>
     </div>
   </div>
   <div id="update">⬆ Update verfügbar – localhost:8090/update</div>
@@ -281,6 +298,24 @@ async function refresh() {
       champs.appendChild(boxEl);
     }
 
+    // ---- Seite 3: Spielername (Tag dezent in Gold) ----
+    const nameEl = document.getElementById("playername");
+    const fullName = d.name || "";
+    if (nameEl.dataset.name !== fullName) {
+      nameEl.dataset.name = fullName;
+      nameEl.textContent = "";
+      const hash = fullName.indexOf("#");
+      if (hash > 0) {
+        nameEl.appendChild(document.createTextNode(fullName.slice(0, hash)));
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = "#" + fullName.slice(hash + 1);
+        nameEl.appendChild(tag);
+      } else {
+        nameEl.textContent = fullName;
+      }
+    }
+
     // Wie oft welche Lane heute (Gruppe ausblenden, wenn noch nichts gespielt)
     const lanes = document.getElementById("lanes");
     document.getElementById("lanesgroup").style.display =
@@ -306,17 +341,17 @@ refresh();
 setInterval(refresh, 2000);
 
 // Seitenwechsel mit weicher Ueberblendung.
-// Die Elo-Seite bleibt laenger stehen, die Champ-Seite wechselt schneller zurueck.
-const RANK_MS = 14000;   // wie lange die Elo (Seite 1) zu sehen ist
-const CHAMPS_MS = 6000;  // wie lange die Champs (Seite 2) zu sehen sind
+// Die Elo-Seite bleibt am laengsten stehen, die anderen wechseln schneller.
+const PAGE_MS = [14000, 6000, 5000]; // Elo, Champs, Name
+const PAGE_IDS = ["page1", "page2", "page3"];
 let page = 0;
 function rotatePages() {
-  page = 1 - page;
-  document.getElementById("page1").classList.toggle("active", page === 0);
-  document.getElementById("page2").classList.toggle("active", page === 1);
-  setTimeout(rotatePages, page === 0 ? RANK_MS : CHAMPS_MS);
+  page = (page + 1) % PAGE_IDS.length;
+  PAGE_IDS.forEach((id, i) =>
+    document.getElementById(id).classList.toggle("active", i === page));
+  setTimeout(rotatePages, PAGE_MS[page]);
 }
-setTimeout(rotatePages, RANK_MS);
+setTimeout(rotatePages, PAGE_MS[0]);
 </script>
 </body>
 </html>
