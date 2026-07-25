@@ -41,8 +41,12 @@
   }
   #overlay.visible { opacity: 1; }
 
-  /* ---- Fester Rank-Block ---- */
-  #rankblock { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  /* ---- Fester Rank-Block (Badge: Emblem oben, Werte darunter) ---- */
+  #rankblock {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 2px;
+    flex-shrink: 0;
+  }
   #emblemwrap { position: relative; width: 142px; height: 142px; flex-shrink: 0; }
   #emblem {
     width: 100%; height: 100%; object-fit: contain;
@@ -55,25 +59,25 @@
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 2px 3px #000, 0 0 12px rgba(0,0,0,.8);
   }
 
-  .col { display: flex; flex-direction: column; gap: 4px; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 
   #lp {
     color: var(--text);
-    font-size: 32px; font-weight: 700; letter-spacing: .4px;
+    font-size: 30px; font-weight: 700; letter-spacing: .4px;
     white-space: nowrap;
     text-shadow: var(--shadow);
   }
 
   #daily {
-    font-size: 28px; font-weight: 800; white-space: nowrap;
+    font-size: 26px; font-weight: 800; white-space: nowrap;
     letter-spacing: .3px;
     text-shadow: var(--shadow);
   }
   #daily.pos  { color: var(--green); }
   #daily.neg  { color: var(--red); }
   #daily.zero { color: var(--muted); }
-  #daily .arrow { font-size: 19px; vertical-align: 2px; margin-right: 2px; }
-  #daily, #lp { transform-origin: left center; }
+  #daily .arrow { font-size: 18px; vertical-align: 2px; margin-right: 2px; }
+  #daily, #lp { transform-origin: center center; }
 
   /* ---- Rotierender Bereich rechts ---- */
   #pages { display: inline-grid; justify-items: start; }
