@@ -44,7 +44,7 @@
 
   /* ---- Name (gehoert zum dominanten Rank-Block) ---- */
   #playername {
-    font-size: 46px; font-weight: 800; letter-spacing: 1px;
+    font-size: 62px; font-weight: 800; letter-spacing: 1px;
     color: var(--text);
     white-space: nowrap;
     text-align: center;
@@ -52,62 +52,62 @@
   }
   #playername .tag {
     color: var(--gold);
-    font-size: 30px; font-weight: 700;
-    margin-left: 8px;
+    font-size: 40px; font-weight: 700;
+    margin-left: 10px;
   }
 
   /* ---- Rank-Reihe: grosses Emblem + LP/Bilanz ---- */
-  #rankrow { display: flex; align-items: center; gap: 18px; }
-  #emblemwrap { position: relative; width: 220px; height: 220px; flex-shrink: 0; }
+  #rankrow { display: flex; align-items: center; gap: 22px; }
+  #emblemwrap { position: relative; width: 290px; height: 290px; flex-shrink: 0; }
   #emblem {
     width: 100%; height: 100%; object-fit: contain;
     filter: drop-shadow(0 4px 10px rgba(0,0,0,.8));
   }
   #division {
-    position: absolute; top: 2px; left: 4px;
-    font-size: 58px; font-weight: 800;
+    position: absolute; top: 4px; left: 6px;
+    font-size: 76px; font-weight: 800;
     color: #fff;
     text-shadow: 0 0 5px rgba(0,0,0,.95), 0 2px 4px #000, 0 0 14px rgba(0,0,0,.8);
   }
 
-  .col { display: flex; flex-direction: column; gap: 6px; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
 
   #lp {
     color: var(--text);
-    font-size: 42px; font-weight: 700; letter-spacing: .4px;
+    font-size: 56px; font-weight: 700; letter-spacing: .4px;
     white-space: nowrap;
     text-shadow: var(--shadow);
   }
 
   /* Die Tagesbilanz ist das dominanteste Text-Element */
   #daily {
-    font-size: 54px; font-weight: 800; white-space: nowrap;
+    font-size: 72px; font-weight: 800; white-space: nowrap;
     letter-spacing: .3px;
     text-shadow: 0 0 5px rgba(0,0,0,.95), 0 2px 4px #000, 0 0 14px rgba(0,0,0,.8);
   }
   #daily.pos  { color: var(--green); }
   #daily.neg  { color: var(--red); }
   #daily.zero { color: var(--muted); }
-  #daily .arrow { font-size: 34px; vertical-align: 4px; margin-right: 4px; }
+  #daily .arrow { font-size: 46px; vertical-align: 5px; margin-right: 5px; }
   #daily, #lp { transform-origin: left center; }
 
   /* ---- Zweitrangig: Champs + Lanes klein darunter ---- */
-  #secondary { display: flex; align-items: flex-start; gap: 26px; }
-  .group { display: flex; flex-direction: column; gap: 6px; }
+  #secondary { display: flex; align-items: flex-start; gap: 30px; }
+  .group { display: flex; flex-direction: column; gap: 7px; }
   .grouplabel {
-    font-size: 13px; font-weight: 700;
+    font-size: 17px; font-weight: 700;
     letter-spacing: 2px; text-transform: uppercase;
     color: var(--gold);
     text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,.8);
     white-space: nowrap;
   }
 
-  #champs { display: flex; gap: 12px; }
+  #champs { display: flex; gap: 14px; }
   .champbox { position: relative; }
   /* Runder Rahmen; das Bild wird hineingezoomt, damit Riots
      eingebauter schwarzer Bildrand weggeschnitten wird */
   .champbox .champframe {
-    width: 58px; height: 58px; border-radius: 50%;
+    width: 76px; height: 76px; border-radius: 50%;
     border: 3px solid transparent;
     overflow: hidden;
     background: #000;
@@ -121,21 +121,21 @@
   .champbox .champframe.win  { border-color: var(--green); }
   .champbox .champframe.loss { border-color: var(--red); filter: saturate(.55) drop-shadow(0 2px 5px rgba(0,0,0,.8)); }
   .champbox .role {
-    position: absolute; right: -4px; bottom: -4px;
-    width: 25px; height: 25px; padding: 4px;
+    position: absolute; right: -5px; bottom: -5px;
+    width: 31px; height: 31px; padding: 5px;
     background: rgba(10, 14, 22, .92);
     border: 1px solid rgba(200, 170, 110, .55);
     border-radius: 50%;
   }
 
-  #lanes { display: flex; gap: 12px; align-items: center; height: 58px; }
-  #lanes .lane { display: flex; align-items: center; gap: 3px; }
+  #lanes { display: flex; gap: 14px; align-items: center; height: 76px; }
+  #lanes .lane { display: flex; align-items: center; gap: 4px; }
   #lanes .lane img {
-    width: 24px; height: 24px;
+    width: 30px; height: 30px;
     filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
   }
   #lanes .lane b {
-    color: var(--text); font-size: 16px; font-weight: 700;
+    color: var(--text); font-size: 21px; font-weight: 700;
     text-shadow: var(--shadow);
   }
 

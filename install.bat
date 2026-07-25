@@ -23,6 +23,6 @@ echo.
 echo LoL Rank Tracker wurde installiert und laeuft jetzt unsichtbar im Hintergrund.
 echo Er startet ab sofort automatisch mit Windows.
 echo.
-echo In OBS einbinden:  Quelle ^> Browser ^> URL: http://localhost:8090/  (Breite 520, Hoehe 420)
+echo In OBS einbinden:  Quelle ^> Browser ^> URL: http://localhost:8090/  (Breite 640, Hoehe 540)
 echo.
 pause
