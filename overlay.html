@@ -16,6 +16,7 @@
     font-weight: 800 900;
   }
   :root {
+    --emblem-size: 200px;
     --text: #f0e6d2;
     --muted: #c8c2b5;
     --gold: #c8aa6e;
@@ -30,10 +31,12 @@
     overflow: hidden;
   }
 
-  /* Rank fest links, rechts daneben rotieren Champs und Name */
+  /* Rank fest links, rechts daneben rotieren Champs und Name.
+     flex-start + .page-Hoehe = Emblem-Hoehe -> der rotierende Inhalt
+     ist exakt auf die Mitte des Emblems zentriert */
   #overlay {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 20px;
     padding: 4px 6px;
     opacity: 0;
@@ -47,14 +50,14 @@
     align-items: center; gap: 2px;
     flex-shrink: 0;
   }
-  #emblemwrap { position: relative; width: 164px; height: 164px; flex-shrink: 0; }
+  #emblemwrap { position: relative; width: var(--emblem-size); height: var(--emblem-size); flex-shrink: 0; }
   #emblem {
     width: 100%; height: 100%; object-fit: contain;
     filter: drop-shadow(0 3px 8px rgba(0,0,0,.8));
   }
   #division {
     position: absolute; top: 0; left: 2px;
-    font-size: 46px; font-weight: 800;
+    font-size: 54px; font-weight: 800;
     color: #fff;
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 2px 3px #000, 0 0 12px rgba(0,0,0,.8);
   }
@@ -84,7 +87,7 @@
   .page {
     grid-area: 1 / 1;
     width: 100%;
-    min-height: 120px;
+    min-height: var(--emblem-size);
     display: inline-flex;
     align-items: center;
     gap: 14px;
@@ -93,7 +96,10 @@
   }
   .page.active { opacity: 1; }
 
-  /* Seite A: Champs mit Rollen-Badge + Lane-Zaehler */
+  /* Seite A: Champs mit Rollen-Badge + Lane-Zaehler.
+     Leicht nach oben versetzt, damit die Icon-Reihe (nicht die
+     Ueberschrift) auf der Emblem-Mitte liegt */
+  #pageA { transform: translateY(-14px); }
   .group { display: flex; flex-direction: column; gap: 8px; }
   .grouplabel {
     font-size: 15px; font-weight: 700;
