@@ -30,36 +30,27 @@
     overflow: hidden;
   }
 
-  /* Drei Seiten, die weich ueberblenden; alle liegen in derselben Grid-Zelle */
+  /* Rank fest links, rechts daneben rotieren Champs und Name */
   #overlay {
-    display: inline-grid;
-    justify-items: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 20px;
     padding: 4px 6px;
     opacity: 0;
     transition: opacity 0.6s;
-    min-width: 560px;
   }
   #overlay.visible { opacity: 1; }
-  .page {
-    grid-area: 1 / 1;
-    width: 100%;
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    opacity: 0;
-    transition: opacity 0.7s;
-  }
-  .page.active { opacity: 1; }
 
-  /* ---- Seite 1: Elo ---- */
-  #emblemwrap { position: relative; width: 124px; height: 124px; flex-shrink: 0; }
+  /* ---- Fester Rank-Block ---- */
+  #rankblock { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  #emblemwrap { position: relative; width: 142px; height: 142px; flex-shrink: 0; }
   #emblem {
     width: 100%; height: 100%; object-fit: contain;
     filter: drop-shadow(0 3px 8px rgba(0,0,0,.8));
   }
   #division {
     position: absolute; top: 0; left: 2px;
-    font-size: 36px; font-weight: 800;
+    font-size: 40px; font-weight: 800;
     color: #fff;
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 2px 3px #000, 0 0 12px rgba(0,0,0,.8);
   }
@@ -68,23 +59,37 @@
 
   #lp {
     color: var(--text);
-    font-size: 30px; font-weight: 700; letter-spacing: .4px;
+    font-size: 32px; font-weight: 700; letter-spacing: .4px;
     white-space: nowrap;
     text-shadow: var(--shadow);
   }
 
   #daily {
-    font-size: 26px; font-weight: 800; white-space: nowrap;
+    font-size: 28px; font-weight: 800; white-space: nowrap;
     letter-spacing: .3px;
     text-shadow: var(--shadow);
   }
   #daily.pos  { color: var(--green); }
   #daily.neg  { color: var(--red); }
   #daily.zero { color: var(--muted); }
-  #daily .arrow { font-size: 18px; vertical-align: 2px; margin-right: 2px; }
+  #daily .arrow { font-size: 19px; vertical-align: 2px; margin-right: 2px; }
   #daily, #lp { transform-origin: left center; }
 
-  /* ---- Seite 2: Champs mit Rollen-Badge + Lane-Zaehler ---- */
+  /* ---- Rotierender Bereich rechts ---- */
+  #pages { display: inline-grid; justify-items: start; }
+  .page {
+    grid-area: 1 / 1;
+    width: 100%;
+    min-height: 120px;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    opacity: 0;
+    transition: opacity 0.7s;
+  }
+  .page.active { opacity: 1; }
+
+  /* Seite A: Champs mit Rollen-Badge + Lane-Zaehler */
   .group { display: flex; flex-direction: column; gap: 8px; }
   .grouplabel {
     font-size: 15px; font-weight: 700;
@@ -132,37 +137,18 @@
     text-shadow: var(--shadow);
   }
 
-  /* ---- Seite 3: Spielername (zentriert) ---- */
-  #page3 { min-height: 124px; justify-content: center; }
+  /* Seite B: Spielername (zentriert im rotierenden Bereich) */
+  #pageB { justify-content: center; }
   #playername {
-    font-size: 46px; font-weight: 800; letter-spacing: 1px;
+    font-size: 42px; font-weight: 800; letter-spacing: 1px;
     color: var(--text);
     white-space: nowrap;
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 2px 3px #000, 0 0 12px rgba(0,0,0,.7);
   }
   #playername .tag {
     color: var(--gold);
-    font-size: 30px; font-weight: 700;
+    font-size: 28px; font-weight: 700;
     margin-left: 8px;
-  }
-
-  /* Mini-Rank oben rechts (auf allen Seiten ausser der Elo-Seite) */
-  #minirank {
-    position: fixed; top: 6px; right: 10px;
-    display: none; align-items: center; gap: 7px;
-    opacity: 0;
-    transition: opacity 0.7s;
-  }
-  #minirank.show { display: flex; opacity: 1; }
-  #minirank img {
-    width: 44px; height: 44px; object-fit: contain;
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,.8));
-  }
-  #minirank span {
-    font-size: 19px; font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    text-shadow: var(--shadow);
   }
 
   /* Hinweis, wenn auf GitHub eine neuere Version liegt */
@@ -177,7 +163,7 @@
 </head>
 <body>
   <div id="overlay">
-    <div id="page1" class="page active">
+    <div id="rankblock">
       <div id="emblemwrap">
         <img id="emblem" alt="" />
         <span id="division"></span>
@@ -187,21 +173,22 @@
         <div id="daily"></div>
       </div>
     </div>
-    <div id="page2" class="page">
-      <div class="group">
-        <div class="grouplabel">Letzte Games</div>
-        <div id="champs"></div>
+    <div id="pages">
+      <div id="pageA" class="page active">
+        <div class="group">
+          <div class="grouplabel">Letzte Games</div>
+          <div id="champs"></div>
+        </div>
+        <div class="group" id="lanesgroup">
+          <div class="grouplabel">Lanes heute</div>
+          <div id="lanes"></div>
+        </div>
       </div>
-      <div class="group" id="lanesgroup">
-        <div class="grouplabel">Lanes heute</div>
-        <div id="lanes"></div>
+      <div id="pageB" class="page">
+        <div id="playername"></div>
       </div>
-    </div>
-    <div id="page3" class="page">
-      <div id="playername"></div>
     </div>
   </div>
-  <div id="minirank"><img alt="" /><span></span></div>
   <div id="update">⬆ Update verfügbar – localhost:8090/update</div>
 
 <script>
@@ -276,7 +263,7 @@ async function refresh() {
     // Update-Hinweis ein-/ausblenden
     document.getElementById("update").style.display = d.updateAvailable ? "block" : "none";
 
-    // ---- Seite 1: Emblem + Divisions-Zahl (Master+ hat keine Division) ----
+    // ---- Fester Rank-Block: Emblem + Divisions-Zahl (Master+ hat keine Division) ----
     const emblem = document.getElementById("emblem");
     const wrap = document.getElementById("emblemwrap");
     const src = emblemUrl(d.tier, d.emblems);
@@ -295,13 +282,6 @@ async function refresh() {
       );
     }
 
-    // Mini-Rank oben rechts (fuer die Seiten ohne grosses Emblem)
-    const miniImg = document.querySelector("#minirank img");
-    const miniText = document.querySelector("#minirank span");
-    if (src) { miniImg.src = src; miniImg.style.display = ""; } else { miniImg.style.display = "none"; }
-    miniText.textContent = d.tier === "UNRANKED" ? "Unranked"
-      : (DIV_NUM[d.rank] ? DIV_NUM[d.rank] + " · " : "") + d.lp + " LP";
-
     // Tagesbilanz: bei Aenderung animiert hochzaehlen
     const net = (d.gains || 0) - (d.losses || 0);
     if (prevNet === null || net === prevNet) {
@@ -311,7 +291,7 @@ async function refresh() {
     }
     prevNet = net;
 
-    // ---- Seite 2: Letzte Champs, Rolle als Badge ----
+    // ---- Seite A: Letzte Champs, Rolle als Badge ----
     const champs = document.getElementById("champs");
     champs.innerHTML = "";
     for (const c of d.champs || []) {
@@ -333,7 +313,7 @@ async function refresh() {
       champs.appendChild(boxEl);
     }
 
-    // ---- Seite 3: Spielername (Tag dezent in Gold) ----
+    // ---- Seite B: Spielername (Tag dezent in Gold) ----
     const nameEl = document.getElementById("playername");
     const fullName = d.name || "";
     if (nameEl.dataset.name !== fullName) {
@@ -375,25 +355,17 @@ async function refresh() {
 refresh();
 setInterval(refresh, 2000);
 
-// Seitenwechsel mit weicher Ueberblendung.
-// Die Elo-Seite bleibt am laengsten stehen, die anderen wechseln schneller.
-const PAGE_MS = [14000, 6000, 5000];        // Elo, Champs, Name
-const PAGE_IDS = ["page1", "page2", "page3"];
+// Der Rank steht fest links - rechts wechseln sich Champs und Name ab.
+const PAGE_MS = [9000, 5000];          // Champs, Name
+const PAGE_IDS = ["pageA", "pageB"];
 let page = 0;
-
-function applyPage() {
-  PAGE_IDS.forEach((id, i) =>
-    document.getElementById(id).classList.toggle("active", i === page));
-  // Mini-Rank nur zeigen, wenn das grosse Emblem nicht zu sehen ist
-  document.getElementById("minirank").classList.toggle("show", page !== 0);
-}
 
 function rotatePages() {
   page = (page + 1) % PAGE_IDS.length;
-  applyPage();
+  PAGE_IDS.forEach((id, i) =>
+    document.getElementById(id).classList.toggle("active", i === page));
   setTimeout(rotatePages, PAGE_MS[page]);
 }
-applyPage();
 setTimeout(rotatePages, PAGE_MS[0]);
 </script>
 </body>

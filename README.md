@@ -19,7 +19,7 @@ Minimalistisches, komplett transparentes OBS-Overlay für League of Legends:
 
 1. Quellen → **+** → **Browser**
 2. URL: `http://localhost:8090/`
-3. Breite **650**, Höhe **160**
+3. Breite **800**, Höhe **170**
 4. Optional: Größe feinjustieren über die URL, z.B. `http://localhost:8090/?scale=1.2` für 20 % größer (Quellen-Breite/Höhe dann entsprechend erhöhen)
 4. An die gewünschte Stelle ziehen — der Hintergrund ist transparent
 
