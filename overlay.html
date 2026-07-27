@@ -61,7 +61,39 @@
   #emblemwrap { position: relative; width: 290px; height: 290px; flex-shrink: 0; }
   #emblem {
     width: 100%; height: 100%; object-fit: contain;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,.8));
+    /* Warmer Schimmer, der sanft an- und abschwillt */
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,.8))
+            drop-shadow(0 0 16px rgba(200, 170, 110, .45));
+    animation: emblemGlow 4s ease-in-out infinite;
+  }
+  @keyframes emblemGlow {
+    0%, 100% { filter: drop-shadow(0 4px 10px rgba(0,0,0,.8))
+                       drop-shadow(0 0 14px rgba(200, 170, 110, .35)); }
+    50%      { filter: drop-shadow(0 4px 10px rgba(0,0,0,.8))
+                       drop-shadow(0 0 26px rgba(240, 220, 170, .75)); }
+  }
+
+  /* Lichtreflex, der regelmaessig ueber das Emblem wandert.
+     Die Maske nutzt dasselbe Emblem-Bild (per JS gesetzt), damit der
+     Glanz exakt der Emblem-Form folgt und nicht als Rechteck erscheint. */
+  #shine {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background: linear-gradient(115deg,
+      transparent 38%,
+      rgba(255, 255, 255, .28) 46%,
+      rgba(255, 255, 255, .85) 50%,
+      rgba(255, 255, 255, .28) 54%,
+      transparent 62%);
+    background-size: 300% 100%;
+    background-position: 150% 0;
+    mask-size: contain; mask-repeat: no-repeat; mask-position: center;
+    -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center;
+    animation: shineSweep 5s ease-in-out infinite;
+  }
+  @keyframes shineSweep {
+    0%       { background-position: 150% 0; }
+    28%, 100% { background-position: -80% 0; }
   }
   #division {
     position: absolute; top: 4px; left: 6px;
@@ -155,6 +187,7 @@
     <div id="rankrow">
       <div id="emblemwrap">
         <img id="emblem" alt="" />
+        <div id="shine"></div>
         <span id="division"></span>
       </div>
       <div class="col">
@@ -270,6 +303,13 @@ async function refresh() {
     const wrap = document.getElementById("emblemwrap");
     const src = emblemUrl(d.tier, d.emblems);
     if (src) { emblem.src = src; wrap.style.display = ""; } else { wrap.style.display = "none"; }
+    // Glanz-Maske auf die Form des aktuellen Emblems setzen
+    const shine = document.getElementById("shine");
+    if (shine.dataset.src !== src) {
+      shine.dataset.src = src;
+      shine.style.maskImage = src ? 'url("' + src + '")' : "";
+      shine.style.webkitMaskImage = src ? 'url("' + src + '")' : "";
+    }
     document.getElementById("division").textContent = DIV_NUM[d.rank] || "";
 
     // Aktuelle LP (bei Aenderung kurz aufblinken)
