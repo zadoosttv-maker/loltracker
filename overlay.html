@@ -22,6 +22,8 @@
     --green: #3ddc84;
     --red: #ff5859;
     --shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000, 0 0 10px rgba(0,0,0,.7);
+    /* Rahmenfarbe - wird per JS auf die Farbe des aktuellen Rangs gesetzt */
+    --tier: #8fa5ff;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -33,14 +35,49 @@
   /* Alles dauerhaft sichtbar, klar gestaffelt:
      Name + Rank + LP-Bilanz dominant, Champs/Lanes klein darunter */
   #overlay {
+    position: relative;
     display: inline-flex;
     flex-direction: column;
     gap: 10px;
-    padding: 6px 8px;
+    padding: 22px 28px;
+    border-radius: 22px;
     opacity: 0;
     transition: opacity 0.6s;
   }
   #overlay.visible { opacity: 1; }
+
+  /* Umrandung in der Rang-Farbe. Die Maske schneidet die Mitte heraus,
+     sodass nur der Rahmen sichtbar bleibt und das Overlay transparent
+     bleibt. Darin faehrt ein heller Lichtpunkt einmal pro Runde herum. */
+  #frame {
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    padding: 3px;                       /* = Dicke der Umrandung */
+    background: var(--tier);
+    opacity: .75;
+    overflow: hidden;
+    pointer-events: none;
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tier) 55%, transparent));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+  }
+  #beam {
+    position: absolute; left: 50%; top: 50%;
+    width: 170%; aspect-ratio: 1;
+    background: conic-gradient(
+      transparent 0deg 250deg,
+      color-mix(in srgb, var(--tier) 70%, #fff) 320deg,
+      #fff 350deg,
+      color-mix(in srgb, var(--tier) 70%, #fff) 356deg,
+      transparent 360deg);
+    animation: beamSpin 4.5s linear infinite;
+  }
+  @keyframes beamSpin {
+    from { transform: translate(-50%, -50%) rotate(0turn); }
+    to   { transform: translate(-50%, -50%) rotate(1turn); }
+  }
 
   /* ---- Name (gehoert zum dominanten Rank-Block) ---- */
   #playername {
@@ -61,39 +98,7 @@
   #emblemwrap { position: relative; width: 290px; height: 290px; flex-shrink: 0; }
   #emblem {
     width: 100%; height: 100%; object-fit: contain;
-    /* Warmer Schimmer, der sanft an- und abschwillt */
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,.8))
-            drop-shadow(0 0 16px rgba(200, 170, 110, .45));
-    animation: emblemGlow 4s ease-in-out infinite;
-  }
-  @keyframes emblemGlow {
-    0%, 100% { filter: drop-shadow(0 4px 10px rgba(0,0,0,.8))
-                       drop-shadow(0 0 14px rgba(200, 170, 110, .35)); }
-    50%      { filter: drop-shadow(0 4px 10px rgba(0,0,0,.8))
-                       drop-shadow(0 0 26px rgba(240, 220, 170, .75)); }
-  }
-
-  /* Lichtreflex, der regelmaessig ueber das Emblem wandert.
-     Die Maske nutzt dasselbe Emblem-Bild (per JS gesetzt), damit der
-     Glanz exakt der Emblem-Form folgt und nicht als Rechteck erscheint. */
-  #shine {
-    position: absolute; inset: 0;
-    pointer-events: none;
-    background: linear-gradient(115deg,
-      transparent 38%,
-      rgba(255, 255, 255, .28) 46%,
-      rgba(255, 255, 255, .85) 50%,
-      rgba(255, 255, 255, .28) 54%,
-      transparent 62%);
-    background-size: 300% 100%;
-    background-position: 150% 0;
-    mask-size: contain; mask-repeat: no-repeat; mask-position: center;
-    -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center;
-    animation: shineSweep 5s ease-in-out infinite;
-  }
-  @keyframes shineSweep {
-    0%       { background-position: 150% 0; }
-    28%, 100% { background-position: -80% 0; }
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,.8));
   }
   #division {
     position: absolute; top: 4px; left: 6px;
@@ -183,11 +188,11 @@
 </head>
 <body>
   <div id="overlay">
+    <div id="frame"><div id="beam"></div></div>
     <div id="playername"></div>
     <div id="rankrow">
       <div id="emblemwrap">
         <img id="emblem" alt="" />
-        <div id="shine"></div>
         <span id="division"></span>
       </div>
       <div class="col">
@@ -221,6 +226,21 @@ function emblemUrl(tier, emblems) {
 }
 
 const DIV_NUM = { I: "1", II: "2", III: "3", IV: "4" };
+
+// Rahmenfarben: die Farbe des jeweiligen Rangs, etwas aufgehellt
+const TIER_COLOR = {
+  IRON: "#a89890",
+  BRONZE: "#cd8b5f",
+  SILVER: "#b9c6d3",
+  GOLD: "#f0cf7f",
+  PLATINUM: "#7fe0dd",
+  EMERALD: "#4fd9ab",
+  DIAMOND: "#8fa5ff",
+  MASTER: "#d68bff",
+  GRANDMASTER: "#ff7a6b",
+  CHALLENGER: "#79c8ff",
+  UNRANKED: "#b9c6d3",
+};
 
 const LANE_ICON = {
   TOP: "icon-position-top.png",
@@ -303,14 +323,11 @@ async function refresh() {
     const wrap = document.getElementById("emblemwrap");
     const src = emblemUrl(d.tier, d.emblems);
     if (src) { emblem.src = src; wrap.style.display = ""; } else { wrap.style.display = "none"; }
-    // Glanz-Maske auf die Form des aktuellen Emblems setzen
-    const shine = document.getElementById("shine");
-    if (shine.dataset.src !== src) {
-      shine.dataset.src = src;
-      shine.style.maskImage = src ? 'url("' + src + '")' : "";
-      shine.style.webkitMaskImage = src ? 'url("' + src + '")' : "";
-    }
     document.getElementById("division").textContent = DIV_NUM[d.rank] || "";
+
+    // Rahmen in der Farbe des aktuellen Rangs
+    document.documentElement.style.setProperty(
+      "--tier", TIER_COLOR[d.tier] || TIER_COLOR.UNRANKED);
 
     // Aktuelle LP (bei Aenderung kurz aufblinken)
     const lpEl = document.getElementById("lp");
