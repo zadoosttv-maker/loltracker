@@ -22,8 +22,6 @@
     --green: #3ddc84;
     --red: #ff5859;
     --shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000, 0 0 10px rgba(0,0,0,.7);
-    /* Rahmenfarbe - wird per JS auf die Farbe des aktuellen Rangs gesetzt */
-    --tier: #8fa5ff;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -35,49 +33,14 @@
   /* Alles dauerhaft sichtbar, klar gestaffelt:
      Name + Rank + LP-Bilanz dominant, Champs/Lanes klein darunter */
   #overlay {
-    position: relative;
     display: inline-flex;
     flex-direction: column;
     gap: 10px;
-    padding: 22px 28px;
-    border-radius: 22px;
+    padding: 6px 8px;
     opacity: 0;
     transition: opacity 0.6s;
   }
   #overlay.visible { opacity: 1; }
-
-  /* Umrandung in der Rang-Farbe. Die Maske schneidet die Mitte heraus,
-     sodass nur der Rahmen sichtbar bleibt und das Overlay transparent
-     bleibt. Darin faehrt ein heller Lichtpunkt einmal pro Runde herum. */
-  #frame {
-    position: absolute; inset: 0;
-    border-radius: inherit;
-    padding: 3px;                       /* = Dicke der Umrandung */
-    background: var(--tier);
-    opacity: .75;
-    overflow: hidden;
-    pointer-events: none;
-    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tier) 55%, transparent));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-  }
-  #beam {
-    position: absolute; left: 50%; top: 50%;
-    width: 170%; aspect-ratio: 1;
-    background: conic-gradient(
-      transparent 0deg 250deg,
-      color-mix(in srgb, var(--tier) 70%, #fff) 320deg,
-      #fff 350deg,
-      color-mix(in srgb, var(--tier) 70%, #fff) 356deg,
-      transparent 360deg);
-    animation: beamSpin 4.5s linear infinite;
-  }
-  @keyframes beamSpin {
-    from { transform: translate(-50%, -50%) rotate(0turn); }
-    to   { transform: translate(-50%, -50%) rotate(1turn); }
-  }
 
   /* ---- Name (gehoert zum dominanten Rank-Block) ---- */
   #playername {
@@ -188,7 +151,6 @@
 </head>
 <body>
   <div id="overlay">
-    <div id="frame"><div id="beam"></div></div>
     <div id="playername"></div>
     <div id="rankrow">
       <div id="emblemwrap">
@@ -226,21 +188,6 @@ function emblemUrl(tier, emblems) {
 }
 
 const DIV_NUM = { I: "1", II: "2", III: "3", IV: "4" };
-
-// Rahmenfarben: die Farbe des jeweiligen Rangs, etwas aufgehellt
-const TIER_COLOR = {
-  IRON: "#a89890",
-  BRONZE: "#cd8b5f",
-  SILVER: "#b9c6d3",
-  GOLD: "#f0cf7f",
-  PLATINUM: "#7fe0dd",
-  EMERALD: "#4fd9ab",
-  DIAMOND: "#8fa5ff",
-  MASTER: "#d68bff",
-  GRANDMASTER: "#ff7a6b",
-  CHALLENGER: "#79c8ff",
-  UNRANKED: "#b9c6d3",
-};
 
 const LANE_ICON = {
   TOP: "icon-position-top.png",
@@ -324,10 +271,6 @@ async function refresh() {
     const src = emblemUrl(d.tier, d.emblems);
     if (src) { emblem.src = src; wrap.style.display = ""; } else { wrap.style.display = "none"; }
     document.getElementById("division").textContent = DIV_NUM[d.rank] || "";
-
-    // Rahmen in der Farbe des aktuellen Rangs
-    document.documentElement.style.setProperty(
-      "--tier", TIER_COLOR[d.tier] || TIER_COLOR.UNRANKED);
 
     // Aktuelle LP (bei Aenderung kurz aufblinken)
     const lpEl = document.getElementById("lp");
