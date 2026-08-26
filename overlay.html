@@ -22,6 +22,8 @@
     --green: #3ddc84;
     --red: #ff5859;
     --shadow: 0 0 4px rgba(0,0,0,.95), 0 1px 2px #000, 0 0 10px rgba(0,0,0,.7);
+    /* Farbe des aktuellen Rangs (aufgehellt) - wird per JS gesetzt */
+    --tier-rgb: 157, 180, 255;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -62,36 +64,47 @@
   #rankrow { display: flex; align-items: center; gap: 22px; }
   #emblemwrap { position: relative; width: 290px; height: 290px; flex-shrink: 0; }
 
-  /* Warmes Licht hinter dem Emblem (bewusst nicht in der Rang-Farbe,
-     sondern im LoL-Gold) - atmet langsam, damit es lebendig wirkt */
-  #emblemglow {
-    /* Als Ellipse an die flache Form der Embleme angepasst (die Grafik
-       fuellt die volle Breite, aber nur die mittleren ~60% der Hoehe) */
-    position: absolute;
-    left: -6%; right: -6%; top: 11%; bottom: 11%;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at 50% 50%,
-      rgba(255, 240, 205, .34) 0%,
-      rgba(232, 200, 138, .20) 34%,
-      rgba(200, 170, 110, .07) 55%,
-      transparent 74%);
-    filter: blur(7px);
-    animation: emblemBreath 5.5s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 0;
-  }
-  @keyframes emblemBreath {
-    0%, 100% { transform: scale(.95); opacity: .6; }
-    50%      { transform: scale(1.05); opacity: 1; }
-  }
-
+  /* Schimmern: das Emblem strahlt in seiner eigenen Rang-Farbe,
+     die Intensitaet schwillt langsam an und ab */
   #emblem {
     position: relative; z-index: 1;
     width: 100%; height: 100%; object-fit: contain;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,.8));
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,.8))
+            drop-shadow(0 0 10px rgba(var(--tier-rgb), .35));
+    animation: emblemShimmer 4.5s ease-in-out infinite;
   }
+  @keyframes emblemShimmer {
+    0%, 100% { filter: drop-shadow(0 4px 10px rgba(0,0,0,.8))
+                       drop-shadow(0 0 8px rgba(var(--tier-rgb), .28)); }
+    50%      { filter: drop-shadow(0 4px 10px rgba(0,0,0,.8))
+                       drop-shadow(0 0 22px rgba(var(--tier-rgb), .70)); }
+  }
+
+  /* Glaenzen: ein Lichtstreifen in der Rang-Farbe wandert ueber das
+     Emblem. Die Maske ist das Emblem-Bild selbst (per JS gesetzt),
+     damit der Glanz exakt der Emblem-Form folgt. */
+  #shine {
+    position: absolute; inset: 0; z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(115deg,
+      transparent 38%,
+      rgba(var(--tier-rgb), .22) 46%,
+      rgba(var(--tier-rgb), .72) 50%,
+      rgba(var(--tier-rgb), .22) 54%,
+      transparent 62%);
+    background-size: 300% 100%;
+    background-position: 155% 0;
+    mask-size: contain; mask-repeat: no-repeat; mask-position: center;
+    -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center;
+    animation: shineSweep 6s ease-in-out infinite;
+  }
+  @keyframes shineSweep {
+    0%        { background-position: 155% 0; }
+    30%, 100% { background-position: -75% 0; }
+  }
+
   #division {
-    position: absolute; top: 4px; left: 6px; z-index: 2;
+    position: absolute; top: 4px; left: 6px; z-index: 3;
     font-size: 76px; font-weight: 800;
     color: #fff;
     text-shadow: 0 0 5px rgba(0,0,0,.95), 0 2px 4px #000, 0 0 14px rgba(0,0,0,.8);
@@ -181,8 +194,8 @@
     <div id="playername"></div>
     <div id="rankrow">
       <div id="emblemwrap">
-        <div id="emblemglow"></div>
         <img id="emblem" alt="" />
+        <div id="shine"></div>
         <span id="division"></span>
       </div>
       <div class="col">
@@ -216,6 +229,22 @@ function emblemUrl(tier, emblems) {
 }
 
 const DIV_NUM = { I: "1", II: "2", III: "3", IV: "4" };
+
+// Farbe je Rang (aufgehellt), fuer Schimmern und Glanz auf dem Emblem.
+// Als RGB-Tripel, damit die Deckkraft im CSS frei gewaehlt werden kann.
+const TIER_RGB = {
+  IRON:        "179, 167, 158",
+  BRONZE:      "217, 160, 114",
+  SILVER:      "207, 218, 230",
+  GOLD:        "245, 217, 140",
+  PLATINUM:    "143, 240, 236",
+  EMERALD:     "110, 240, 189",
+  DIAMOND:     "157, 180, 255",
+  MASTER:      "223, 155, 255",
+  GRANDMASTER: "255, 143, 128",
+  CHALLENGER:  "143, 212, 255",
+  UNRANKED:    "207, 218, 230",
+};
 
 const LANE_ICON = {
   TOP: "icon-position-top.png",
@@ -298,6 +327,18 @@ async function refresh() {
     const wrap = document.getElementById("emblemwrap");
     const src = emblemUrl(d.tier, d.emblems);
     if (src) { emblem.src = src; wrap.style.display = ""; } else { wrap.style.display = "none"; }
+    // Glanz-Maske auf die Form des aktuellen Emblems setzen
+    const shine = document.getElementById("shine");
+    if (shine.dataset.src !== src) {
+      shine.dataset.src = src;
+      shine.style.maskImage = src ? 'url("' + src + '")' : "";
+      shine.style.webkitMaskImage = src ? 'url("' + src + '")' : "";
+    }
+
+    // Schimmer- und Glanzfarbe = Farbe des aktuellen Rangs
+    document.documentElement.style.setProperty(
+      "--tier-rgb", TIER_RGB[d.tier] || TIER_RGB.UNRANKED);
+
     document.getElementById("division").textContent = DIV_NUM[d.rank] || "";
 
     // Aktuelle LP (bei Aenderung kurz aufblinken)
