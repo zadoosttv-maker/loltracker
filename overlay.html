@@ -93,14 +93,15 @@
       rgba(var(--tier-rgb), .22) 54%,
       transparent 62%);
     background-size: 300% 100%;
+    background-repeat: no-repeat;   /* sonst laufen mehrere Streifen gleichzeitig durch */
     background-position: 155% 0;
     mask-size: contain; mask-repeat: no-repeat; mask-position: center;
     -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center;
-    animation: shineSweep 6s ease-in-out infinite;
+    animation: shineSweep 7s linear infinite;
   }
   @keyframes shineSweep {
     0%        { background-position: 155% 0; }
-    30%, 100% { background-position: -75% 0; }
+    36%, 100% { background-position: -75% 0; }
   }
 
   #division {
