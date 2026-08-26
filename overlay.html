@@ -36,7 +36,9 @@
     display: inline-flex;
     flex-direction: column;
     gap: 10px;
-    padding: 6px 8px;
+    /* Seitlicher Rand, damit der Schein hinter dem Emblem nicht
+       am Rand der Browser-Quelle abgeschnitten wird */
+    padding: 10px 36px;
     opacity: 0;
     transition: opacity 0.6s;
   }
@@ -59,12 +61,37 @@
   /* ---- Rank-Reihe: grosses Emblem + LP/Bilanz ---- */
   #rankrow { display: flex; align-items: center; gap: 22px; }
   #emblemwrap { position: relative; width: 290px; height: 290px; flex-shrink: 0; }
+
+  /* Warmes Licht hinter dem Emblem (bewusst nicht in der Rang-Farbe,
+     sondern im LoL-Gold) - atmet langsam, damit es lebendig wirkt */
+  #emblemglow {
+    /* Als Ellipse an die flache Form der Embleme angepasst (die Grafik
+       fuellt die volle Breite, aber nur die mittleren ~60% der Hoehe) */
+    position: absolute;
+    left: -6%; right: -6%; top: 11%; bottom: 11%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 50%,
+      rgba(255, 240, 205, .34) 0%,
+      rgba(232, 200, 138, .20) 34%,
+      rgba(200, 170, 110, .07) 55%,
+      transparent 74%);
+    filter: blur(7px);
+    animation: emblemBreath 5.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes emblemBreath {
+    0%, 100% { transform: scale(.95); opacity: .6; }
+    50%      { transform: scale(1.05); opacity: 1; }
+  }
+
   #emblem {
+    position: relative; z-index: 1;
     width: 100%; height: 100%; object-fit: contain;
     filter: drop-shadow(0 4px 10px rgba(0,0,0,.8));
   }
   #division {
-    position: absolute; top: 4px; left: 6px;
+    position: absolute; top: 4px; left: 6px; z-index: 2;
     font-size: 76px; font-weight: 800;
     color: #fff;
     text-shadow: 0 0 5px rgba(0,0,0,.95), 0 2px 4px #000, 0 0 14px rgba(0,0,0,.8);
@@ -154,6 +181,7 @@
     <div id="playername"></div>
     <div id="rankrow">
       <div id="emblemwrap">
+        <div id="emblemglow"></div>
         <img id="emblem" alt="" />
         <span id="division"></span>
       </div>
