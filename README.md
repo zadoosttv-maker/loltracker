@@ -3,7 +3,8 @@
 Minimalistisches, komplett transparentes OBS-Overlay für League of Legends:
 
 - **Rank-Emblem + aktuelle LP** (z.B. „Diamant IV · 5 LP")
-- **LP-Bilanz des Tages** als `+32 / −18` (Reset um Mitternacht)
+- **LP-Bilanz des Tages** als eine Zahl, z.B. `▲ +32 LP` (Reset um 6 Uhr morgens, damit Nacht-Sessions nicht mittendrin abbrechen)
+- **Serie**: 🔥 mit Zähler ab 3 Siegen in Folge, 💧 ab 4 Niederlagen in Folge
 - **Letzte 3 Ranked-Champs** mit grünem (Win) / rotem (Loss) Rand
 - **Lane-Zähler**: wie oft du heute welche Position bekommen hast — direkt aus der Champ-Auswahl (inkl. offizieller Role-Swaps), nicht aus Riots Ingame-Schätzung
 
@@ -54,7 +55,7 @@ Beides lädt die neueste Version herunter, tauscht die Dateien aus und startet d
 
 - `server.js` (reines Node.js, keine Abhängigkeiten) verbindet sich mit dem lokalen League-Client und stellt das Overlay unter `http://localhost:8090/` bereit
 - Rank, LP und Match-Historie kommen von der LCU-API des Clients; während der Champ-Auswahl wird alle 5 Sekunden die zugewiesene Position mitgeschrieben
-- LP-Änderungen werden in `state.json` pro Account aufsummiert (Gewinne und Verluste getrennt) und um Mitternacht zurückgesetzt
+- LP-Änderungen werden in `state.json` pro Account aufsummiert (Gewinne und Verluste getrennt) und um 6 Uhr morgens zurückgesetzt – der „Spieltag" läuft also von 6:00 bis 5:59 am nächsten Morgen
 - Ist der Client geschlossen, zeigt das Overlay den letzten bekannten Stand
 
 ## Voraussetzungen

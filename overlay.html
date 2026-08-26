@@ -104,6 +104,19 @@
     36%, 100% { background-position: -75% 0; }
   }
 
+  /* Serien-Abzeichen oben rechts am Emblem, spiegelbildlich zur
+     Divisions-Zahl - nutzt den freien Platz, kostet keine Breite */
+  #streak {
+    position: absolute; top: 4px; right: 6px; z-index: 3;
+    display: none; align-items: center; gap: 3px;
+    text-shadow: 0 0 5px rgba(0,0,0,.95), 0 2px 4px #000, 0 0 14px rgba(0,0,0,.8);
+  }
+  #streak.show { display: flex; }
+  #streak .icon  { font-size: 46px; line-height: 1; }
+  #streak .count { font-size: 40px; font-weight: 800; }
+  #streak.hot  .count { color: #ff9d4d; }
+  #streak.cold .count { color: #7fc4ff; }
+
   #division {
     position: absolute; top: 4px; left: 6px; z-index: 3;
     font-size: 76px; font-weight: 800;
@@ -198,6 +211,7 @@
         <img id="emblem" alt="" />
         <div id="shine"></div>
         <span id="division"></span>
+        <span id="streak"></span>
       </div>
       <div class="col">
         <div id="lp"></div>
@@ -341,6 +355,20 @@ async function refresh() {
       "--tier-rgb", TIER_RGB[d.tier] || TIER_RGB.UNRANKED);
 
     document.getElementById("division").textContent = DIV_NUM[d.rank] || "";
+
+    // Serie: Flamme ab 3 Siegen in Folge, Traene ab 4 Niederlagen in Folge
+    const streakEl = document.getElementById("streak");
+    const st = d.streak || 0;
+    if (st >= 3) {
+      streakEl.className = "show hot";
+      streakEl.innerHTML = '<span class="icon">🔥</span><span class="count">' + st + '</span>';
+    } else if (st <= -4) {
+      streakEl.className = "show cold";
+      streakEl.innerHTML = '<span class="icon">💧</span><span class="count">' + Math.abs(st) + '</span>';
+    } else {
+      streakEl.className = "";
+      streakEl.innerHTML = "";
+    }
 
     // Aktuelle LP (bei Aenderung kurz aufblinken)
     const lpEl = document.getElementById("lp");

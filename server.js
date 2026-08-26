@@ -54,9 +54,16 @@ function absoluteLP(tier, division, lp) {
   return t * 400 + (DIVS[division] || 0) * 100 + lp;
 }
 
-function todayStr() {
-  const d = new Date();
+// Der Spieltag laeuft von 6:00 bis 5:59 am naechsten Morgen. So bricht eine
+// Nacht-Session nicht um Mitternacht mitten im Stream die Tagesbilanz ab.
+const DAY_START_HOUR = 6;
+function dayKey(when) {
+  const d = new Date(when);
+  d.setHours(d.getHours() - DAY_START_HOUR);
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function todayStr() {
+  return dayKey(new Date());
 }
 
 function loadState() {
@@ -237,8 +244,7 @@ async function watchChampSelect() {
 
 function isToday(ts) {
   if (!ts) return false;
-  const d = new Date(ts);
-  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") === todayStr();
+  return dayKey(ts) === todayStr();
 }
 
 // ---- Overlay-Daten ----
@@ -261,6 +267,8 @@ function buildOverlay(acc, connected) {
     defeats: fresh ? acc.defeats || 0 : 0,
     champs: last.champs || [],
     lanes: fresh ? acc.lanes || [] : [],
+    // Die Serie haengt an den letzten Spielen, nicht am Kalendertag
+    streak: (acc && acc.streak) || 0,
     emblems,
     ddragonVersion,
     version: VERSION,
@@ -347,6 +355,21 @@ async function poll() {
       .sort((a, b) => b[1] - a[1])
       .map(([role, count]) => ({ role, count }));
 
+    // Serie: wie viele Ranked-Spiele in Folge gewonnen bzw. verloren.
+    // Kommt aus der Match-Historie (neueste zuerst), ist also auch nach
+    // einem Neustart des Trackers sofort korrekt.
+    let streak = 0;   // positiv = Siege in Folge, negativ = Niederlagen
+    for (const g of games) {
+      if (g.queueId !== 420) continue;
+      const p = g.participants && g.participants[0];
+      if (!p || !p.stats) break;
+      const won = !!p.stats.win;
+      if (streak === 0) streak = won ? 1 : -1;
+      else if (won && streak > 0) streak++;
+      else if (!won && streak < 0) streak--;
+      else break;
+    }
+
     // Tagesstatistik pro Account
     if (!state.accounts[puuid]) state.accounts[puuid] = {};
     const acc = state.accounts[puuid];
@@ -361,6 +384,7 @@ async function poll() {
     }
     acc.last = { tier, rank: division, lp, champs };
     acc.lanes = lanes;
+    acc.streak = streak;
     state.activePuuid = puuid;
     saveState(state);
 
