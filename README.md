@@ -1,10 +1,11 @@
 # LoL Rank Tracker – OBS Overlay
 
-Minimalistisches, komplett transparentes OBS-Overlay für League of Legends:
+Minimalistisches, komplett transparentes OBS-Overlay für **League of Legends, TFT und Valorant** – es wechselt automatisch zum Rang des Spiels, das du gerade spielst:
 
 - **Rank-Emblem + aktuelle LP** (z.B. „Diamant IV · 5 LP")
 - **LP-Bilanz des Tages** als eine Zahl, z.B. `▲ +32 LP` (Reset um 6 Uhr morgens, damit Nacht-Sessions nicht mittendrin abbrechen)
 - **Serie**: 🔥 mit Zähler ab 3 Siegen in Folge, 💧 ab 4 Niederlagen in Folge
+- **Automatischer Spielwechsel**: LoL, TFT und Valorant – erkannt an Lobby/Warteschlange bzw. am laufenden Valorant. TFT und Valorant zeigen Rang und Tagesbilanz (bei Valorant in RR), jeweils mit eigener Tagesstatistik
 - **Letzte 3 Ranked-Champs** mit grünem (Win) / rotem (Loss) Rand
 - **Lane-Zähler**: wie oft du heute welche Position bekommen hast — direkt aus der Champ-Auswahl (inkl. offizieller Role-Swaps), nicht aus Riots Ingame-Schätzung
 
@@ -20,9 +21,8 @@ Minimalistisches, komplett transparentes OBS-Overlay für League of Legends:
 
 1. Quellen → **+** → **Browser**
 2. URL: `http://localhost:8090/`
-3. Breite **620**, Höhe **560**
+3. Breite **700**, Höhe **560**
 4. An die gewünschte Stelle ziehen. **Zu klein?** Einfach eine Ecke der Quelle im Vorschaufenster nach außen ziehen – OBS skaliert das Overlay dann verlustfrei größer. Alternativ die URL auf `http://localhost:8090/?scale=1.4` setzen und Breite/Höhe entsprechend erhöhen.
-4. An die gewünschte Stelle ziehen — der Hintergrund ist transparent
 
 Sobald der League-Client läuft, füllt sich das Overlay nach ~30 Sekunden automatisch.
 
@@ -58,11 +58,16 @@ Beides lädt die neueste Version herunter, tauscht die Dateien aus und startet d
 - LP-Änderungen werden in `state.json` pro Account aufsummiert (Gewinne und Verluste getrennt) und um 6 Uhr morgens zurückgesetzt – der „Spieltag" läuft also von 6:00 bis 5:59 am nächsten Morgen
 - Ist der Client geschlossen, zeigt das Overlay den letzten bekannten Stand
 
+## Hinweis zu TFT und Valorant
+
+- **TFT** kommt aus derselben Quelle wie LoL (dem League-Client) – funktioniert also genauso zuverlässig und ohne Zusatzaufwand.
+- **Valorant** liest den Rang über den lokalen Riot Client aus. Das funktioniert nur, solange der Riot Client läuft, und nutzt von Riot nicht dokumentierte Endpunkte – ein Valorant-Patch kann das also jederzeit ändern. Fällt es aus, bleiben LoL und TFT davon unberührt.
+
 ## Voraussetzungen
 
 - Windows
 - [Node.js](https://nodejs.org) 18 oder neuer
-- League of Legends
+- League of Legends (für den LoL- und TFT-Rang) und/oder Valorant
 
 ## Rechtliches
 

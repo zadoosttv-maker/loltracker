@@ -247,19 +247,155 @@ function isToday(ts) {
   return dayKey(ts) === todayStr();
 }
 
+// ---- Valorant ----
+// Rang kommt ueber den lokalen Riot Client: dessen Lockfile liefert Port und
+// Passwort, damit holen wir uns die Tokens und fragen Riots Valorant-Server.
+// Das sind undokumentierte Endpunkte - kann sich mit einem Patch aendern.
+const VAL_LOCK = path.join(process.env.LOCALAPPDATA || "", "Riot Games", "Riot Client", "Config", "lockfile");
+const VAL_SHARD = { EUW:"eu", EUNE:"eu", EU:"eu", TR:"eu", RU:"eu", NA:"na", LATAM:"na", BR:"na", AP:"ap", SEA:"ap", KR:"kr" };
+let valTiers = null;        // Tier-Nummer -> { name, division, icon }
+let valLastFetch = 0;
+let valorantRunning = false;
+
+function httpsJson(opts) {
+  return new Promise(res => {
+    const r = https.request({ ...opts, timeout: 12000 }, x => {
+      let b = ""; x.on("data", c => b += c);
+      x.on("end", () => { try { res({ s: x.statusCode, j: JSON.parse(b) }); } catch { res({ s: x.statusCode, j: null }); } });
+    });
+    r.on("error", () => res({ s: 0, j: null }));
+    r.on("timeout", () => { r.destroy(); res({ s: 0, j: null }); });
+    r.end();
+  });
+}
+
+async function loadValTiers() {
+  if (valTiers) return valTiers;
+  const r = await httpsJson({ host: "valorant-api.com", port: 443, path: "/v1/competitivetiers" });
+  if (!r.j || !r.j.data || !r.j.data.length) return null;
+  const neueste = r.j.data[r.j.data.length - 1];
+  valTiers = {};
+  for (const t of neueste.tiers || []) {
+    const teile = String(t.tierName || "").trim().split(/s+/);
+    const div = /^[0-9]+$/.test(teile[teile.length - 1]) ? teile.pop() : "";
+    valTiers[t.tier] = { name: teile.join(" ").toUpperCase(), division: div, icon: t.largeIcon || null };
+  }
+  return valTiers;
+}
+
+async function fetchValorant() {
+  if (!fs.existsSync(VAL_LOCK)) return null;   // Riot Client laeuft nicht
+  let lock;
+  try { lock = fs.readFileSync(VAL_LOCK, "utf8").split(":"); } catch { return null; }
+  const port = lock[2], pw = lock[3];
+  if (!port || !pw) return null;
+  const auth = "Basic " + Buffer.from("riot:" + pw).toString("base64");
+
+  const ent = await httpsJson({ host: "127.0.0.1", port, path: "/entitlements/v1/token",
+    headers: { Authorization: auth }, rejectUnauthorized: false });
+  if (!ent.j || !ent.j.accessToken || !ent.j.subject) return null;
+
+  const reg = await httpsJson({ host: "127.0.0.1", port, path: "/riotclient/region-locale",
+    headers: { Authorization: auth }, rejectUnauthorized: false });
+  const region = String((reg.j && (reg.j.webRegion || reg.j.region)) || "").toUpperCase();
+  const shard = VAL_SHARD[region] || "eu";
+
+  const ver = await httpsJson({ host: "valorant-api.com", port: 443, path: "/v1/version" });
+  const clientVersion = ver.j && ver.j.data && ver.j.data.riotClientVersion;
+  if (!clientVersion) return null;
+
+  const tiers = await loadValTiers();
+  const platform = Buffer.from(JSON.stringify({ platformType: "PC", platformOS: "Windows",
+    platformOSVersion: "10.0.19042.1.256.64bit", platformChipset: "Unknown" })).toString("base64");
+  const mmr = await httpsJson({ host: "pd." + shard + ".a.pvp.net", port: 443,
+    path: "/mmr/v1/players/" + ent.j.subject,
+    headers: { Authorization: "Bearer " + ent.j.accessToken, "X-Riot-Entitlements-JWT": ent.j.token,
+               "X-Riot-ClientVersion": clientVersion, "X-Riot-ClientPlatform": platform } });
+  if (mmr.s !== 200 || !mmr.j) return null;
+
+  const upd = mmr.j.LatestCompetitiveUpdate;
+  const tierNr = (upd && upd.TierAfterUpdate) || 0;
+  const rr = (upd && upd.RankedRatingAfterUpdate) || 0;
+  const info = (tiers && tiers[tierNr]) || null;
+  return {
+    puuid: ent.j.subject,
+    tier: tierNr > 0 && info ? info.name : "UNRANKED",
+    rank: info ? info.division : "",
+    rr,
+    tierNr,
+    icon: info ? info.icon : null,
+  };
+}
+
+// ---- Welches Spiel wird gerade gespielt? ----
+function checkValorantRunning() {
+  return new Promise(resolve => {
+    execFile("powershell.exe", ["-NoProfile", "-Command",
+      "if (Get-Process -Name 'VALORANT-Win64-Shipping' -ErrorAction SilentlyContinue) { 'JA' } else { 'NEIN' }"],
+      { timeout: 15000 }, (err, stdout) => resolve(!err && /JA/.test(String(stdout))));
+  });
+}
+
+// TFT-Warteschlangen liegen im Bereich 1090-1199
+function queueIsTft(id) { return id >= 1090 && id < 1200; }
+
+// Aus Lobby bzw. laufendem Spiel ableiten, ob gerade LoL oder TFT laeuft.
+// Ausserhalb einer Lobby bleibt der zuletzt gespielte Modus stehen.
+async function detectLolMode(state) {
+  let qid = null;
+  try { const lob = await lcuGet("/lol-lobby/v2/lobby"); qid = lob && lob.gameConfig && lob.gameConfig.queueId; } catch {}
+  if (!qid || qid <= 0) {
+    try { const gf = await lcuGet("/lol-gameflow/v1/session"); qid = gf && gf.gameData && gf.gameData.queue && gf.gameData.queue.id; } catch {}
+  }
+  if (qid && qid > 0) {
+    state.lastLolMode = queueIsTft(qid) ? "TFT" : "LOL";
+    return state.lastLolMode;
+  }
+  return state.lastLolMode || "LOL";
+}
+
 // ---- Overlay-Daten ----
-function buildOverlay(acc, connected) {
+// Baut die Anzeige-Daten fuer das gerade gespielte Spiel (LoL, TFT oder Valorant).
+function buildOverlay(acc, connected, game) {
+  game = game || (acc && acc.activeGame) || "LOL";
   const today = todayStr();
+  const base = {
+    clientConnected: connected, error: null, game,
+    emblems, ddragonVersion, version: VERSION, latestVersion, updateAvailable,
+  };
+
+  // TFT und Valorant: nur Rang und Tagesbilanz, keine Champs/Lanes/Serie
+  if (game === "TFT" || game === "VAL") {
+    const blk = (acc && (game === "TFT" ? acc.tft : acc.val)) || {};
+    const fresh = blk.date === today;
+    const last = blk.last || {};
+    return {
+      ...base,
+      ok: !!last.tier,
+      name: (acc && acc.name) || null,
+      tier: last.tier || null,
+      rank: last.rank || "",
+      lp: game === "VAL" ? (last.rr || 0) : (last.lp || 0),
+      lpLabel: game === "VAL" ? "RR" : "LP",
+      tierIcon: last.icon || null,
+      gains: fresh ? blk.gains || 0 : 0,
+      losses: fresh ? blk.losses || 0 : 0,
+      net: fresh ? (blk.gains || 0) - (blk.losses || 0) : 0,
+      wins: 0, defeats: 0, champs: [], lanes: [], streak: 0,
+    };
+  }
+
   const fresh = acc && acc.date === today;
   const last = (acc && acc.last) || {};
   return {
+    ...base,
     ok: !!last.tier,
-    clientConnected: connected,
-    error: null,
     name: (acc && acc.name) || null,
     tier: last.tier || null,
     rank: last.rank || null,
     lp: last.lp || 0,
+    lpLabel: "LP",
+    tierIcon: null,
     gains: fresh ? acc.gains || 0 : 0,
     losses: fresh ? acc.losses || 0 : 0,
     net: fresh ? (acc.gains || 0) - (acc.losses || 0) : 0,
@@ -269,12 +405,21 @@ function buildOverlay(acc, connected) {
     lanes: fresh ? acc.lanes || [] : [],
     // Die Serie haengt an den letzten Spielen, nicht am Kalendertag
     streak: (acc && acc.streak) || 0,
-    emblems,
-    ddragonVersion,
-    version: VERSION,
-    latestVersion,
-    updateAvailable,
   };
+}
+
+// Tagesbilanz fuer TFT/Valorant fortschreiben (gleiche Logik wie bei LoL,
+// nur ohne Sieg-/Niederlagenzaehler)
+function trackBlock(blk, abs) {
+  const today = todayStr();
+  if (blk.date !== today) {
+    blk.date = today; blk.gains = 0; blk.losses = 0; blk.lastAbs = abs;
+  }
+  if (blk.lastAbs != null && abs != null && abs !== blk.lastAbs) {
+    const diff = abs - blk.lastAbs;
+    if (diff > 0) blk.gains += diff; else blk.losses += -diff;
+  }
+  blk.lastAbs = abs;
 }
 
 let overlayData = buildOverlay(activeAccount(loadState()), false);
@@ -296,11 +441,38 @@ function trackLP(acc, tier, division, lp) {
   acc.lastAbs = abs;
 }
 
+// Valorant ohne laufenden League-Client. Die PUUID ist bei Riot kontoweit
+// gleich, der Eintrag landet also beim selben Account wie die LoL-Daten.
+async function pollValorantOnly() {
+  const state = loadState();
+  if (Date.now() - valLastFetch <= 60000) {
+    overlayData = buildOverlay(activeAccount(state), true, "VAL");
+    return;
+  }
+  valLastFetch = Date.now();
+  const v = await fetchValorant();
+  if (!v) { overlayData = buildOverlay(activeAccount(state), false); return; }
+  if (!state.accounts[v.puuid]) state.accounts[v.puuid] = {};
+  const acc = state.accounts[v.puuid];
+  if (!acc.val) acc.val = {};
+  if (v.tierNr > 0) trackBlock(acc.val, v.tierNr * 100 + v.rr);
+  else if (acc.val.date !== todayStr()) { acc.val.date = todayStr(); acc.val.gains = 0; acc.val.losses = 0; }
+  acc.val.last = { tier: v.tier, rank: v.rank, rr: v.rr, icon: v.icon };
+  acc.activeGame = "VAL";
+  state.activePuuid = v.puuid;
+  saveState(state);
+  overlayData = buildOverlay(acc, true, "VAL");
+}
+
 async function poll() {
   emblems = scanEmblems();
+  // Prozess nur pruefen, wenn der Riot Client ueberhaupt laeuft (spart Aufrufe)
+  valorantRunning = fs.existsSync(VAL_LOCK) ? await checkValorantRunning() : false;
   try {
     if (!lcu) lcu = await findLcu();
     if (!lcu) {
+      // Valorant laeuft auch ohne League-Client
+      if (valorantRunning) { await pollValorantOnly(); return; }
       overlayData = buildOverlay(activeAccount(loadState()), false);
       return;
     }
@@ -385,10 +557,38 @@ async function poll() {
     acc.last = { tier, rank: division, lp, champs };
     acc.lanes = lanes;
     acc.streak = streak;
+    // ---- TFT: steht in derselben Antwort wie die LoL-Rangliste ----
+    const tftQ = ranked.queueMap && ranked.queueMap.RANKED_TFT;
+    if (tftQ) {
+      const tTier = TIERS.includes(tftQ.tier) ? tftQ.tier : "UNRANKED";
+      if (!acc.tft) acc.tft = {};
+      if (tTier !== "UNRANKED") trackBlock(acc.tft, absoluteLP(tTier, tftQ.division, tftQ.leaguePoints));
+      else if (acc.tft.date !== todayStr()) { acc.tft.date = todayStr(); acc.tft.gains = 0; acc.tft.losses = 0; }
+      acc.tft.last = { tier: tTier, rank: tftQ.division === "NA" ? "" : tftQ.division, lp: tftQ.leaguePoints || 0 };
+    }
+
+    // ---- Valorant: hoechstens einmal pro Minute abfragen ----
+    if (Date.now() - valLastFetch > 60000) {
+      valLastFetch = Date.now();
+      try {
+        const v = await fetchValorant();
+        if (v) {
+          if (!acc.val) acc.val = {};
+          if (v.tierNr > 0) trackBlock(acc.val, v.tierNr * 100 + v.rr);
+          else if (acc.val.date !== todayStr()) { acc.val.date = todayStr(); acc.val.gains = 0; acc.val.losses = 0; }
+          acc.val.last = { tier: v.tier, rank: v.rank, rr: v.rr, icon: v.icon };
+        }
+      } catch { /* Riot Client zu oder Endpunkt geaendert */ }
+    }
+
+    // ---- Welches Spiel laeuft gerade? ----
+    const lolMode = await detectLolMode(state);
+    acc.activeGame = valorantRunning ? "VAL" : lolMode;
+
     state.activePuuid = puuid;
     saveState(state);
 
-    overlayData = buildOverlay(acc, true);
+    overlayData = buildOverlay(acc, true, acc.activeGame);
   } catch (e) {
     console.error(new Date().toLocaleTimeString(), e.message);
     overlayData = { ...overlayData, error: e.message, emblems, ddragonVersion };

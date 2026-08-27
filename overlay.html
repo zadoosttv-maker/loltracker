@@ -126,6 +126,17 @@
 
   .col { display: flex; flex-direction: column; gap: 8px; }
 
+  /* Kleines Label, damit man TFT/Valorant vom LoL-Rang unterscheiden kann
+     (TFT nutzt dieselben Rang-Embleme wie LoL) */
+  #gamelabel {
+    font-size: 20px; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: var(--gold);
+    text-shadow: 0 1px 2px #000, 0 0 8px rgba(0,0,0,.85);
+    display: none;
+  }
+  #gamelabel.show { display: block; }
+
   #lp {
     color: var(--text);
     font-size: 56px; font-weight: 700; letter-spacing: .4px;
@@ -214,6 +225,7 @@
         <span id="streak"></span>
       </div>
       <div class="col">
+        <div id="gamelabel"></div>
         <div id="lp"></div>
         <div id="daily"></div>
       </div>
@@ -258,6 +270,9 @@ const TIER_RGB = {
   MASTER:      "223, 155, 255",
   GRANDMASTER: "255, 143, 128",
   CHALLENGER:  "143, 212, 255",
+  ASCENDANT:   "126, 240, 178",
+  IMMORTAL:    "255, 122, 150",
+  RADIANT:     "255, 246, 194",
   UNRANKED:    "207, 218, 230",
 };
 
@@ -340,7 +355,8 @@ async function refresh() {
     // ---- Rank: Emblem + Divisions-Zahl (Master+ hat keine Division) ----
     const emblem = document.getElementById("emblem");
     const wrap = document.getElementById("emblemwrap");
-    const src = emblemUrl(d.tier, d.emblems);
+    // Valorant liefert ein eigenes Rang-Icon mit, LoL/TFT nutzen die lokalen Embleme
+    const src = d.tierIcon || emblemUrl(d.tier, d.emblems);
     if (src) { emblem.src = src; wrap.style.display = ""; } else { wrap.style.display = "none"; }
     // Glanz-Maske auf die Form des aktuellen Emblems setzen
     const shine = document.getElementById("shine");
@@ -354,7 +370,13 @@ async function refresh() {
     document.documentElement.style.setProperty(
       "--tier-rgb", TIER_RGB[d.tier] || TIER_RGB.UNRANKED);
 
-    document.getElementById("division").textContent = DIV_NUM[d.rank] || "";
+    document.getElementById("division").textContent =
+      DIV_NUM[d.rank] || (/^[0-9]+$/.test(d.rank || "") ? d.rank : "");
+
+    // Spiel-Label nur bei TFT und Valorant (LoL ist der Normalfall)
+    const gl = document.getElementById("gamelabel");
+    gl.textContent = d.game === "TFT" ? "TFT" : d.game === "VAL" ? "Valorant" : "";
+    gl.className = gl.textContent ? "show" : "";
 
     // Serie: Flamme ab 3 Siegen in Folge, Traene ab 4 Niederlagen in Folge
     const streakEl = document.getElementById("streak");
@@ -372,7 +394,7 @@ async function refresh() {
 
     // Aktuelle LP (bei Aenderung kurz aufblinken)
     const lpEl = document.getElementById("lp");
-    const lpText = d.tier === "UNRANKED" ? "Unranked" : d.lp + " LP";
+    const lpText = d.tier === "UNRANKED" || !d.tier ? "Unranked" : d.lp + " " + (d.lpLabel || "LP");
     if (lpEl.textContent !== lpText) {
       const hadValue = lpEl.textContent !== "";
       lpEl.textContent = lpText;
@@ -393,6 +415,8 @@ async function refresh() {
 
     // ---- Zweitrangig: Letzte Champs, Rolle als Badge ----
     const champs = document.getElementById("champs");
+    // Bei TFT/Valorant gibt es keine Champ-Liste -> Gruppe komplett ausblenden
+    champs.parentElement.style.display = (d.champs || []).length ? "" : "none";
     champs.innerHTML = "";
     for (const c of d.champs || []) {
       const boxEl = document.createElement("div");
