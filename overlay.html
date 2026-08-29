@@ -249,9 +249,11 @@ const scaleParam = parseFloat(new URLSearchParams(location.search).get("scale"))
 if (scaleParam && scaleParam > 0 && scaleParam !== 1) document.body.style.zoom = scaleParam;
 
 // Embleme: lokale Dateien im Ordner (vom Server automatisch erkannt), sonst CommunityDragon
+const UNRANKED_ICON = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/unranked.svg";
 function emblemUrl(tier, emblems) {
   if (emblems && emblems[tier]) return "/" + encodeURIComponent(emblems[tier]);
-  if (!tier || tier === "UNRANKED") return "";
+  // Ohne Rang das offizielle Unranked-Wappen zeigen statt gar nichts
+  if (!tier || tier === "UNRANKED") return UNRANKED_ICON;
   return "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-" + tier.toLowerCase() + ".png";
 }
 

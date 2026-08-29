@@ -87,6 +87,8 @@ function scanEmblems() {
     for (const f of fs.readdirSync(ROOT)) {
       if (!/\.(webp|png|jpg|jpeg|gif)$/i.test(f)) continue;
       const upper = f.toUpperCase();
+      // Eigenes Unranked-Bild, falls jemand eins in den Ordner legt
+      if (upper.includes("UNRANKED") || upper.includes("UNGERANKT")) map.UNRANKED = f;
       for (const tier of TIERS) {
         if (upper.includes(tier) || (tier === "SILVER" && upper.includes("SILBER")) ||
             (tier === "IRON" && upper.includes("EISEN"))) {
@@ -568,7 +570,10 @@ async function poll() {
     }
 
     // ---- Valorant: hoechstens einmal pro Minute abfragen ----
-    if (Date.now() - valLastFetch > 60000) {
+    // Nur haeufig abfragen, wenn Valorant auch laeuft. Sonst reicht ein
+    // Erstabruf und danach ein seltener Abgleich - schont Riots Server.
+    const valPause = valorantRunning ? 60000 : (acc.val && acc.val.last ? 15 * 60000 : 60000);
+    if (Date.now() - valLastFetch > valPause) {
       valLastFetch = Date.now();
       try {
         const v = await fetchValorant();
@@ -644,5 +649,6 @@ server.listen(config.port, "127.0.0.1", () => {
   setInterval(poll, (config.pollSeconds || 30) * 1000);
   setInterval(watchChampSelect, 2000);
   setInterval(loadDDragon, 6 * 3600 * 1000);
-  setInterval(checkUpdate, 6 * 3600 * 1000);
+  // Alle 15 Minuten pruefen, damit ein Update zeitnah bei allen ankommt
+  setInterval(checkUpdate, 15 * 60 * 1000);
 });

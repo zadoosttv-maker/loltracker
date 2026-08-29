@@ -6,6 +6,7 @@ Minimalistisches, komplett transparentes OBS-Overlay für **League of Legends, T
 - **LP-Bilanz des Tages** als eine Zahl, z.B. `▲ +32 LP` (Reset um 6 Uhr morgens, damit Nacht-Sessions nicht mittendrin abbrechen)
 - **Serie**: 🔥 mit Zähler ab 3 Siegen in Folge, 💧 ab 4 Niederlagen in Folge
 - **Automatischer Spielwechsel**: LoL, TFT und Valorant – erkannt an Lobby/Warteschlange bzw. am laufenden Valorant. TFT und Valorant zeigen Rang und Tagesbilanz (bei Valorant in RR), jeweils mit eigener Tagesstatistik
+- **Ohne Rang** (z.B. noch nicht platziert) wird das offizielle Unranked-Wappen angezeigt statt einer Lücke
 - **Letzte 3 Ranked-Champs** mit grünem (Win) / rotem (Loss) Rand
 - **Lane-Zähler**: wie oft du heute welche Position bekommen hast — direkt aus der Champ-Auswahl (inkl. offizieller Role-Swaps), nicht aus Riots Ingame-Schätzung
 
@@ -28,7 +29,7 @@ Sobald der League-Client läuft, füllt sich das Overlay nach ~30 Sekunden autom
 
 ## Eigene Rank-Embleme (optional)
 
-Lege einfach Bilddateien in den Projektordner, deren Dateiname den englischen Tier-Namen enthält (z.B. `Mein_Diamond.png`, `emblem-gold.webp`). Sie werden automatisch erkannt. Für Tiers ohne lokale Datei wird das offizielle Emblem von CommunityDragon geladen.
+Lege einfach Bilddateien in den Projektordner, deren Dateiname den englischen Tier-Namen enthält (z.B. `Mein_Diamond.png`, `emblem-gold.webp`, auch `unranked.png`). Sie werden automatisch erkannt. Für Tiers ohne lokale Datei wird das offizielle Emblem von CommunityDragon geladen.
 
 ## Anpassen (`config.json`)
 
@@ -40,7 +41,7 @@ Lege einfach Bilddateien in den Projektordner, deren Dateiname den englischen Ti
 
 ## Updates
 
-Der Tracker prüft automatisch, ob es auf GitHub eine neuere Version gibt. Falls ja, erscheint unten links im Overlay dezent **„⬆ Update verfügbar"**. Zum Aktualisieren gibt es zwei Wege:
+Der Tracker prüft alle 15 Minuten automatisch, ob es auf GitHub eine neuere Version gibt.
 
 - **`update.bat` doppelklicken**, oder
 - **http://localhost:8090/update** im Browser öffnen und auf „Jetzt updaten" klicken
